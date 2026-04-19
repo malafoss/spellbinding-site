@@ -66,6 +66,7 @@
   <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
 
   <script>
+  // Copyright © 2026 Spellbinding. All rights reserved.
   (function () {
     'use strict';
 
@@ -106,21 +107,28 @@
     }
 
     // ── Audio ────────────────────────────────────────────────────────────────
-    let analyser = null, freqData = null, started = false;
-    let sBass = 0, sHigh = 0;
+    let ac = null, analyser = null, freqData = null, started = false;
+    let sBass = 0, sFlux = 0, punch = 0;
+    let kick = 0, snare = 0, hat = 0, keys = 0, pitch = 0.5;
+    let prevRawKick = 0, prevRawSnare = 0;
+    let kickCooldown = 0, snareCooldown = 0;
+    let pitchMin = 1.0, pitchMax = 0.0;
+    let prevFreqData = null;
+    let bassMin = 1.0, bassMax = 0.0;
+    let audioEl = null;
 
     async function start() {
       if (started) return;
       started = true;
       try {
-        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        ac = new (window.AudioContext || window.webkitAudioContext)();
         await ac.resume();
         analyser = ac.createAnalyser();
-        analyser.fftSize = 512;
-        analyser.smoothingTimeConstant = 0.82;
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = 0.75;
         freqData = new Uint8Array(analyser.frequencyBinCount);
 
-        const audioEl = new Audio('spellcasting.m4a');
+        audioEl = new Audio('spellcasting.m4a');
         audioEl.loop = true;
         const src = ac.createMediaElementSource(audioEl);
         src.connect(analyser);
@@ -131,41 +139,128 @@
       }
     }
 
-    document.addEventListener('click',      start, { once: true });
-    document.addEventListener('touchstart', start, { once: true, passive: true });
+    function handleInteraction(e) {
+      if (e.target.closest && e.target.closest('a')) return; // let links through
+      if (!started) {
+        start();
+      } else if (audioEl) {
+        audioEl.paused ? audioEl.play() : audioEl.pause();
+      }
+    }
+
+    document.addEventListener('click',      handleInteraction);
+    document.addEventListener('touchstart', handleInteraction, { passive: true });
 
     function readAudio() {
       if (!analyser) return;
+      if (!prevFreqData) prevFreqData = new Uint8Array(freqData.length);
       analyser.getByteFrequencyData(freqData);
 
+      // Bass: bins 1-10 (23–234 Hz)
       let b = 0;
-      for (let i = 0; i < 8; i++) b += freqData[i];
-      const rawBass = b / (8 * 255);
+      for (let i = 1; i <= 10; i++) b += freqData[i];
+      const rawBass = b / (10 * 255);
 
-      let h = 0;
-      for (let i = 20; i < 80; i++) h += freqData[i];
-      const rawHigh = h / (60 * 255);
+      // Adaptive min/max — instantly tracks new extremes, decays very slowly
+      if (rawBass < bassMin) bassMin = rawBass;
+      else bassMin += (rawBass - bassMin) * 0.001;
+      if (rawBass > bassMax) bassMax = rawBass;
+      else bassMax += (rawBass - bassMax) * 0.001;
 
-      sBass += (rawBass - sBass) * 0.4;
-      sHigh += (rawHigh - sHigh) * 0.55;
+      const range   = Math.max(bassMax - bassMin, 0.04);
+      const normBass = Math.max(0, Math.min(1, (rawBass - bassMin) / range));
+      sBass += (normBass - sBass) * 0.2;
+
+      // Spectral flux
+      let f = 0;
+      for (let i = 1; i <= 30; i++) {
+        const d = freqData[i] - prevFreqData[i];
+        if (d > 0) f += d;
+      }
+      const rawFlux = f / (30 * 255);
+      sFlux += (rawFlux - sFlux) * 0.4;
+      punch = Math.min(1, Math.max(punch * 0.6, rawFlux * 6));
+
+      // Kick drum: bins 3-6 (70-140 Hz) — delta-based onset
+      let k = 0;
+      for (let i = 3; i <= 6; i++) k += freqData[i];
+      const rawKick = k / (4 * 255);
+      const kickDelta = Math.max(0, rawKick - prevRawKick);
+      prevRawKick = rawKick;
+      kickCooldown = Math.max(0, kickCooldown - 1);
+      if (kickDelta > 0.012 && kickCooldown === 0) {
+        kick = 1.0;
+        kickCooldown = 18;
+      } else {
+        kick *= 0.78;
+      }
+
+      // Snare: bins 8-17 (188-400 Hz) — delta-based onset
+      let s = 0;
+      for (let i = 8; i <= 17; i++) s += freqData[i];
+      const rawSnare = s / (10 * 255);
+      const snareDelta = Math.max(0, rawSnare - prevRawSnare);
+      prevRawSnare = rawSnare;
+      snareCooldown = Math.max(0, snareCooldown - 1);
+      if (snareDelta > 0.008 && snareCooldown === 0) {
+        snare = 1.0;
+        snareCooldown = 12;
+      } else {
+        snare *= 0.72;
+      }
+
+      // Keyboard pitch: peak bin in upper-mid range (bins 40-150 = 940-3515 Hz)
+      // avoids bass guitar bleed in lower bins
+      let peakVal = 0, pitchBin = 40;
+      for (let i = 40; i <= 150; i++) {
+        if (freqData[i] > peakVal) { peakVal = freqData[i]; pitchBin = i; }
+      }
+      const rawPitch = (pitchBin - 40) / 110;
+      if (rawPitch < pitchMin) pitchMin = rawPitch;
+      else pitchMin += (rawPitch - pitchMin) * 0.002;
+      if (rawPitch > pitchMax) pitchMax = rawPitch;
+      else pitchMax += (rawPitch - pitchMax) * 0.002;
+      const normPitch = Math.max(0, Math.min(1, (rawPitch - pitchMin) / Math.max(pitchMax - pitchMin, 0.05)));
+      pitch += (normPitch - pitch) * 0.1;
+
+      // Keyboard presence (energy in pitch range) for width modulation
+      let mSum = 0;
+      for (let i = 20; i <= 150; i++) mSum += freqData[i];
+      const rawKeys = Math.min(1, mSum / (130 * 255) * 6);
+      keys += (rawKeys - keys) * 0.15;
+
+      // Hi-hat: spectral flux in bins 150-385 (3.5-9 kHz) — heavily amplified
+      let hFlux = 0;
+      for (let i = 150; i <= 385; i++) {
+        const d = freqData[i] - prevFreqData[i];
+        if (d > 0) hFlux += d;
+      }
+      hat += (Math.min(1, hFlux / (235 * 255) * 40) - hat) * 0.5;
+
+      prevFreqData.set(freqData);
     }
 
     // ── Molten surface ───────────────────────────────────────────────────────
-    const N = 72;
-    const wPhase = [], wFreq = [], wAmp = [];
-    for (let i = 0; i <= N; i++) {
-      wPhase.push(Math.random() * Math.PI * 2);
-      wFreq.push(0.18 + Math.random() * 0.55);
-      wAmp.push(10 + Math.random() * 30);
-    }
-    let mt = 0;
+    const N = 30;
+    // Integer-period waves — seamless left→right wrapping
+    const WAVES = [
+      { p: 4, a: 10, ph: 0.0,  s: 1.0  },
+      { p: 6, a:  6, ph: 1.3,  s: 0.65 },
+      { p: 2, a:  8, ph: 2.5,  s: 1.4  },
+      { p: 8, a:  4, ph: 0.9,  s: 0.45 },
+    ];
+    let mt = 0, scroll = 0;
 
     function sY(i) {
-      return H * 0.70 + Math.sin(mt * wFreq[i] + wPhase[i]) * wAmp[i] * (1 + sBass * 6);
+      const x = ((i / N) + scroll) % 1;
+      let wave = 0;
+      for (const w of WAVES) wave += w.a * Math.sin(x * Math.PI * 2 * w.p + w.ph + mt * w.s);
+      const raw = H * 0.82 + wave * (1 + sBass * 2 + punch * 1.5 + kick * 2 + snare * 1 + keys * 1);
+      return Math.max(H * 0.55, Math.min(H - 6, raw));
     }
 
     function drawMolten() {
-      const base = H * 0.70;
+      const base = H * 0.80;
 
       // Pool fill
       ctx.save();
@@ -184,8 +279,8 @@
       ctx.closePath();
 
       const gr = ctx.createLinearGradient(0, base - 50, 0, H);
-      gr.addColorStop(0,    `rgba(240,65,0,${0.08 + sBass * 0.9})`);
-      gr.addColorStop(0.18, `rgba(160,28,0,${0.55 + sBass * 0.4})`);
+      gr.addColorStop(0,    `rgba(240,65,0,${0.08 + sBass * 0.6 + punch * 1.2})`);
+      gr.addColorStop(0.18, `rgba(160,28,0,${0.55 + sBass * 0.3 + punch * 0.5})`);
       gr.addColorStop(0.55, 'rgba(45,4,0,0.88)');
       gr.addColorStop(1,    '#000');
       ctx.fillStyle = gr;
@@ -196,16 +291,38 @@
       ctx.save();
       const glow = ctx.createLinearGradient(0, base - 80, 0, base + 60);
       glow.addColorStop(0,   'transparent');
-      glow.addColorStop(0.5, `rgba(255,85,0,${0.03 + sBass * 0.55})`);
+      glow.addColorStop(0.5, `rgba(255,85,0,${0.03 + sBass * 0.3 + punch * 0.9 + keys * 0.5})`);
       glow.addColorStop(1,   'transparent');
       ctx.fillStyle = glow;
       ctx.fillRect(0, base - 80, W, 140);
       ctx.restore();
 
+      // Pitch-driven horizontal width: higher note = wider pool
+      const halfW = W * (0.2 + pitch * 0.8);
+      const fadeW = W * 0.18;
+      const lEdge = W / 2 - halfW;
+      const rEdge = W / 2 + halfW;
+      ctx.save();
+      if (lEdge + fadeW > 0) {
+        const leftFade = ctx.createLinearGradient(lEdge - fadeW, 0, lEdge + fadeW, 0);
+        leftFade.addColorStop(0, 'rgba(0,0,0,0.92)');
+        leftFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = leftFade;
+        ctx.fillRect(0, 0, Math.max(0, lEdge + fadeW), H);
+      }
+      if (rEdge - fadeW < W) {
+        const rightFade = ctx.createLinearGradient(rEdge - fadeW, 0, rEdge + fadeW, 0);
+        rightFade.addColorStop(0, 'rgba(0,0,0,0)');
+        rightFade.addColorStop(1, 'rgba(0,0,0,0.92)');
+        ctx.fillStyle = rightFade;
+        ctx.fillRect(rEdge - fadeW, 0, Math.max(0, W - (rEdge - fadeW)), H);
+      }
+      ctx.restore();
+
       // Ambient heat rising from below
       ctx.save();
-      const amb = ctx.createRadialGradient(W / 2, H, 0, W / 2, H, H * 0.85);
-      amb.addColorStop(0,   `rgba(200,35,0,${0.05 + sBass * 0.35})`);
+      const amb = ctx.createRadialGradient(W / 2, H, 0, W / 2, H, H * 0.5);
+      amb.addColorStop(0,   `rgba(200,35,0,${0.05 + sBass * 0.2 + punch * 0.6})`);
       amb.addColorStop(0.6, 'transparent');
       ctx.fillStyle = amb;
       ctx.fillRect(0, 0, W, H);
@@ -231,7 +348,7 @@
 
     // ── Sparks ───────────────────────────────────────────────────────────────
     const sparks = [];
-    const MAX_SPARKS = 700;
+    const MAX_SPARKS = 350;
 
     class Spark {
       constructor(x, y, e) {
@@ -241,11 +358,8 @@
         this.life  = 1;
         this.decay = 0.006 + Math.random() * 0.022;
         this.r     = 0.7 + Math.random() * 1.7;
-        this.trail = [];
       }
       update() {
-        this.trail.push([this.x, this.y]);
-        if (this.trail.length > 5) this.trail.shift();
         this.vx += (Math.random() - 0.5) * 0.08;
         this.x  += this.vx;
         this.y  += this.vy;
@@ -253,18 +367,10 @@
         this.life -= this.decay;
       }
       draw() {
-        const col = heatColor(this.life);
-        for (let i = 0; i < this.trail.length; i++) {
-          ctx.globalAlpha = (i / this.trail.length) * this.life * 0.28;
-          ctx.fillStyle   = col;
-          ctx.beginPath();
-          ctx.arc(this.trail[i][0], this.trail[i][1], this.r * 0.5, 0, 6.2832);
-          ctx.fill();
-        }
         ctx.globalAlpha = this.life;
-        ctx.shadowBlur  = 5 + this.life * 8;
+        ctx.shadowBlur  = 4 + this.life * 6;
         ctx.shadowColor = 'rgba(255,100,0,0.9)';
-        ctx.fillStyle   = col;
+        ctx.fillStyle   = heatColor(this.life);
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r, 0, 6.2832);
         ctx.fill();
@@ -275,7 +381,42 @@
 
     // ── Embers (large, slow, heavy) ──────────────────────────────────────────
     const embers = [];
-    const MAX_EMBERS = 22;
+    const MAX_EMBERS = 8;
+
+    // ── Light sparks (snare-only, near-white, fast) ──────────────────────────
+    const lightSparks = [];
+    const MAX_LIGHT = 80;
+
+    class LightSpark {
+      constructor(x, y) {
+        this.x = x; this.y = y;
+        this.vx = (Math.random() - 0.5) * 5;
+        this.vy = -(3 + Math.random() * 6);
+        this.life  = 1;
+        this.decay = 0.025 + Math.random() * 0.04;
+        this.r     = 0.4 + Math.random() * 1.0;
+      }
+      update() {
+        this.x  += this.vx;
+        this.y  += this.vy;
+        this.vy += 0.05;
+        this.vx *= 0.97;
+        this.life -= this.decay;
+      }
+      draw() {
+        const t = this.life;
+        const r = 255, g = (200 + t * 55) | 0, b = (t * 200) | 0;
+        ctx.globalAlpha = t;
+        ctx.shadowBlur  = 8;
+        ctx.shadowColor = `rgba(255,240,180,${t})`;
+        ctx.fillStyle   = `rgb(${r},${g},${b})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, 6.2832);
+        ctx.fill();
+        ctx.shadowBlur  = 0;
+        ctx.globalAlpha = 1;
+      }
+    }
 
     class Ember {
       constructor() {
@@ -312,16 +453,28 @@
 
     // ── Spawn logic ──────────────────────────────────────────────────────────
     function spawnParticles(dt) {
-      const rate = (8 + sHigh * 160) * dt;
+      // Heavy sparks — hat is the primary gate
+      const rate = (hat * 400 + sFlux * 20) * dt;
       const n    = Math.floor(rate) + (Math.random() < (rate % 1) ? 1 : 0);
       for (let i = 0; i < n && sparks.length < MAX_SPARKS; i++) {
         const xi = (Math.random() * N) | 0;
         const x  = (xi / N) * W + (Math.random() - 0.5) * 44;
         const y  = sY(xi) + (Math.random() - 0.5) * 12;
-        const e  = 0.5 + sHigh * 3.5 + Math.random() * 0.5;
+        const e  = 0.5 + hat * 2 + sFlux * 2 + pitch * 1.5 + Math.random() * 0.5;
         sparks.push(new Spark(x, y, e));
       }
-      if (embers.length < MAX_EMBERS && Math.random() < (0.03 + sBass * 0.35) * dt * 60) {
+
+      // Light sparks — snare is the primary gate
+      const lRate = snare * 120 * dt;
+      const lN    = Math.floor(lRate) + (Math.random() < (lRate % 1) ? 1 : 0);
+      for (let i = 0; i < lN && lightSparks.length < MAX_LIGHT; i++) {
+        const xi = (Math.random() * N) | 0;
+        const x  = (xi / N) * W + (Math.random() - 0.5) * 60;
+        const y  = sY(xi);
+        lightSparks.push(new LightSpark(x, y));
+      }
+
+      if (embers.length < MAX_EMBERS && Math.random() < (0.03 + sBass * 0.35 + kick * 0.8) * dt * 60) {
         embers.push(new Ember());
       }
     }
@@ -336,6 +489,15 @@
       textEl.style.opacity = v;
     }
 
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function tick(arr, dead) {
+      for (let i = arr.length - 1; i >= 0; i--) {
+        arr[i].update();
+        if (dead(arr[i])) { arr.splice(i, 1); continue; }
+        arr[i].draw();
+      }
+    }
+
     // ── Loop ─────────────────────────────────────────────────────────────────
     let last = 0;
 
@@ -346,20 +508,16 @@
       last = t;
 
       readAudio();
-      mt += 0.003 + sBass * 0.04;
+      mt     += 0.008 + sBass * 0.04 + kick * 0.02;
+      scroll += 0.0003 + sBass * 0.0002; // slow left drift, wraps seamlessly
 
       ctx.clearRect(0, 0, W, H);
       drawMolten();
       spawnParticles(dt);
 
-      for (let i = embers.length - 1; i >= 0; i--) {
-        embers[i].update(); embers[i].draw();
-        if (embers[i].life <= 0 || embers[i].y < -30) embers.splice(i, 1);
-      }
-      for (let i = sparks.length - 1; i >= 0; i--) {
-        sparks[i].update(); sparks[i].draw();
-        if (sparks[i].life <= 0 || sparks[i].y > H + 10) sparks.splice(i, 1);
-      }
+      tick(embers,     p => p.life <= 0 || p.y < -30);
+      tick(sparks,     p => p.life <= 0 || p.y > H + 10);
+      tick(lightSparks,p => p.life <= 0 || p.y > H + 10);
 
       updateGrain();
       flicker(t);
