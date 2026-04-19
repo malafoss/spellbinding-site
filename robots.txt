@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /spellcasting.m4a
+
+Sitemap: https://spellbinding.band/sitemap.xml
