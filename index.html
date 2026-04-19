@@ -143,8 +143,8 @@
       const rawBass = b / (8 * 255);
 
       let h = 0;
-      for (let i = 120; i < freqData.length; i++) h += freqData[i];
-      const rawHigh = h / ((freqData.length - 120) * 255);
+      for (let i = 20; i < 80; i++) h += freqData[i];
+      const rawHigh = h / (60 * 255);
 
       sBass += (rawBass - sBass) * 0.4;
       sHigh += (rawHigh - sHigh) * 0.55;
@@ -312,7 +312,7 @@
 
     // ── Spawn logic ──────────────────────────────────────────────────────────
     function spawnParticles(dt) {
-      const rate = (3 + sHigh * 120) * dt;
+      const rate = (8 + sHigh * 160) * dt;
       const n    = Math.floor(rate) + (Math.random() < (rate % 1) ? 1 : 0);
       for (let i = 0; i < n && sparks.length < MAX_SPARKS; i++) {
         const xi = (Math.random() * N) | 0;
