@@ -110,15 +110,13 @@
     let sBass = 0, sHigh = 0;
 
     const audioEl = new Audio('spellcasting.m4a');
-    audioEl.loop = true;
+    audioEl.loop    = true;
     audioEl.preload = 'auto';
+    audioEl.muted   = true; // muted autoplay is allowed by browsers
 
-    async function startAudio() {
-      if (audioLive) return;
-      audioLive = true;
+    async function initAudio() {
       try {
         const ac = new (window.AudioContext || window.webkitAudioContext)();
-        if (ac.state === 'suspended') await ac.resume();
         analyser = ac.createAnalyser();
         analyser.fftSize = 512;
         analyser.smoothingTimeConstant = 0.82;
@@ -133,8 +131,13 @@
       }
     }
 
-    document.addEventListener('click',      startAudio, { once: true });
-    document.addEventListener('touchstart', startAudio, { once: true, passive: true });
+    function unmute() {
+      audioEl.muted = false;
+    }
+
+    initAudio();
+    document.addEventListener('click',      unmute, { once: true });
+    document.addEventListener('touchstart', unmute, { once: true, passive: true });
 
     function readAudio() {
       if (!analyser) return;
