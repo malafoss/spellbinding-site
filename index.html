@@ -119,7 +119,7 @@
         analyser.smoothingTimeConstant = 0.82;
         freqData = new Uint8Array(analyser.frequencyBinCount);
 
-        const res = await fetch('riffi.mp3');
+        const res = await fetch('spellcasting.m4a');
         const buf = await ac.decodeAudioData(await res.arrayBuffer());
         const src = ac.createBufferSource();
         src.buffer = buf; src.loop = true;
