@@ -20,6 +20,7 @@
     "name": "Spellbinding",
     "url": "https://spellbinding.band",
     "email": "contact@spellbinding.band",
+    "sameAs": "https://www.instagram.com/spellbinding.band/",
     "foundingLocation": {
       "@type": "Place",
       "addressCountry": "FI"
@@ -80,12 +81,26 @@
       transition: color 0.3s;
     }
     #contact:hover { color: rgba(255,255,255,0.9); }
+
+    #instagram {
+      position: fixed;
+      bottom: 1.75rem; left: 2rem;
+      z-index: 3;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(0.6rem, 1.4vw, 0.78rem);
+      color: rgba(200,200,200,0.55);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      transition: color 0.3s;
+    }
+    #instagram:hover { color: rgba(255,255,255,0.9); }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
   <canvas id="grain"></canvas>
   <div id="text">Something is forming</div>
+  <a id="instagram" href="https://www.instagram.com/spellbinding.band/" target="_blank" rel="noopener">@spellbinding.band</a>
   <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
 
   <script>
