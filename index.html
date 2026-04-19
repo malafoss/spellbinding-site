@@ -132,13 +132,9 @@
         const src = ac.createMediaElementSource(audioEl);
         src.connect(analyser);
         analyser.connect(ac.destination);
-
-        // Fire resume and play concurrently — both need the gesture context.
-        // Awaiting resume() first deadlocks Android; awaiting play() first
-        // deadlocks Android when the context is suspended.
         await Promise.all([ac.resume(), audioEl.play()]);
       } catch (e) {
-        console.error('Audio error:', e);
+        console.error('Audio error:', e.message);
       }
     }
 
@@ -146,7 +142,7 @@
     function handleInteraction(e) {
       if (e.target.closest && e.target.closest('a')) return;
       const now = Date.now();
-      if (now - lastInteraction < 300) return; // debounce touch+click double-fire
+      if (now - lastInteraction < 500) return;
       lastInteraction = now;
       if (!started) {
         start();
@@ -155,8 +151,8 @@
       }
     }
 
-    document.addEventListener('click',      handleInteraction);
-    document.addEventListener('touchstart', handleInteraction, { passive: true });
+    document.addEventListener('click',   handleInteraction);
+    document.addEventListener('touchend', handleInteraction);
 
     function readAudio() {
       if (!analyser) return;
