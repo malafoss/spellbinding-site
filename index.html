@@ -62,7 +62,7 @@
 <body>
   <canvas id="canvas"></canvas>
   <canvas id="grain"></canvas>
-  <div id="text">Something is forming.</div>
+  <div id="text">Something is forming</div>
   <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
 
   <script>
@@ -279,22 +279,15 @@
       ctx.closePath();
 
       const gr = ctx.createLinearGradient(0, base - 50, 0, H);
-      gr.addColorStop(0,    `rgba(240,65,0,${0.08 + sBass * 0.6 + punch * 1.2})`);
-      gr.addColorStop(0.18, `rgba(160,28,0,${0.55 + sBass * 0.3 + punch * 0.5})`);
-      gr.addColorStop(0.55, 'rgba(45,4,0,0.88)');
+      gr.addColorStop(0,    `rgba(160,0,200,${0.08 + sBass * 0.6 + punch * 1.2})`);
+      gr.addColorStop(0.18, `rgba(90,0,130,${0.55 + sBass * 0.3 + punch * 0.5})`);
+      gr.addColorStop(0.55, 'rgba(25,0,45,0.88)');
       gr.addColorStop(1,    '#000');
-      ctx.fillStyle = gr;
+      ctx.fillStyle   = gr;
+      ctx.shadowBlur  = 18 + sBass * 28 + punch * 35;
+      ctx.shadowColor = `rgba(180,0,220,${0.5 + sBass * 0.3 + keys * 0.2})`;
       ctx.fill();
-      ctx.restore();
-
-      // Surface emission band
-      ctx.save();
-      const glow = ctx.createLinearGradient(0, base - 80, 0, base + 60);
-      glow.addColorStop(0,   'transparent');
-      glow.addColorStop(0.5, `rgba(255,85,0,${0.03 + sBass * 0.3 + punch * 0.9 + keys * 0.5})`);
-      glow.addColorStop(1,   'transparent');
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, base - 80, W, 140);
+      ctx.shadowBlur  = 0;
       ctx.restore();
 
       // Pitch-driven horizontal width: higher note = wider pool
@@ -322,28 +315,33 @@
       // Ambient heat rising from below
       ctx.save();
       const amb = ctx.createRadialGradient(W / 2, H, 0, W / 2, H, H * 0.5);
-      amb.addColorStop(0,   `rgba(200,35,0,${0.05 + sBass * 0.2 + punch * 0.6})`);
+      amb.addColorStop(0,   `rgba(120,0,160,${0.05 + sBass * 0.2 + punch * 0.6})`);
       amb.addColorStop(0.6, 'transparent');
       ctx.fillStyle = amb;
       ctx.fillRect(0, 0, W, H);
       ctx.restore();
     }
 
-    // ── Heat color ───────────────────────────────────────────────────────────
+    // ── Heat color — purple/violet spectrum ─────────────────────────────────
     function heatColor(t) {
       if (t > 0.75) {
         const p = (t - 0.75) / 0.25;
-        return `rgb(255,${(200 + p * 55) | 0},${(p * 180) | 0})`;
+        // bright violet → near-white lavender
+        return `rgb(${(200 + p * 40) | 0},${(80 + p * 130) | 0},255)`;
       }
       if (t > 0.50) {
         const p = (t - 0.50) / 0.25;
-        return `rgb(255,${(80 + p * 120) | 0},0)`;
+        // #a000c8 → bright violet
+        return `rgb(${(160 + p * 40) | 0},${(p * 80) | 0},${(200 + p * 55) | 0})`;
       }
       if (t > 0.25) {
         const p = (t - 0.25) / 0.25;
-        return `rgb(255,${(p * 80) | 0},0)`;
+        // deep purple → #a000c8
+        return `rgb(${(90 + p * 70) | 0},0,${(120 + p * 80) | 0})`;
       }
-      return `rgb(${(120 + (t / 0.25) * 135) | 0},0,0)`;
+      // dying: smoky dark purple
+      const p = t / 0.25;
+      return `rgb(${(40 + p * 50) | 0},${(10 * p) | 0},${(55 + p * 65) | 0})`;
     }
 
     // ── Sparks ───────────────────────────────────────────────────────────────
@@ -369,7 +367,7 @@
       draw() {
         ctx.globalAlpha = this.life;
         ctx.shadowBlur  = 4 + this.life * 6;
-        ctx.shadowColor = 'rgba(255,100,0,0.9)';
+        ctx.shadowColor = 'rgba(180,0,240,0.9)';
         ctx.fillStyle   = heatColor(this.life);
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r, 0, 6.2832);
@@ -405,11 +403,10 @@
       }
       draw() {
         const t = this.life;
-        const r = 255, g = (200 + t * 55) | 0, b = (t * 200) | 0;
         ctx.globalAlpha = t;
         ctx.shadowBlur  = 8;
-        ctx.shadowColor = `rgba(255,240,180,${t})`;
-        ctx.fillStyle   = `rgb(${r},${g},${b})`;
+        ctx.shadowColor = `rgba(220,180,255,${t})`;
+        ctx.fillStyle   = `rgb(${(200 + t * 40) | 0},${(80 + t * 130) | 0},255)`;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r, 0, 6.2832);
         ctx.fill();
@@ -441,7 +438,7 @@
       draw() {
         ctx.globalAlpha = this.life * 0.70;
         ctx.shadowBlur  = 14;
-        ctx.shadowColor = `rgba(255,55,0,${this.life})`;
+        ctx.shadowColor = `rgba(160,0,200,${this.life})`;
         ctx.fillStyle   = heatColor(this.life * 0.55);
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r * this.life, 0, 6.2832);
