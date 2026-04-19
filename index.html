@@ -106,40 +106,33 @@
     }
 
     // ── Audio ────────────────────────────────────────────────────────────────
-    let analyser = null, freqData = null, audioLive = false;
+    let analyser = null, freqData = null, started = false;
     let sBass = 0, sHigh = 0;
-    let ac = null;
 
-    const audioEl = new Audio('spellcasting.m4a');
-    audioEl.loop    = true;
-    audioEl.preload = 'auto';
-    audioEl.muted   = true;
-
-    async function initAudio() {
+    async function start() {
+      if (started) return;
+      started = true;
       try {
-        ac = new (window.AudioContext || window.webkitAudioContext)();
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        await ac.resume();
         analyser = ac.createAnalyser();
         analyser.fftSize = 512;
         analyser.smoothingTimeConstant = 0.82;
         freqData = new Uint8Array(analyser.frequencyBinCount);
 
+        const audioEl = new Audio('spellcasting.m4a');
+        audioEl.loop = true;
         const src = ac.createMediaElementSource(audioEl);
         src.connect(analyser);
         analyser.connect(ac.destination);
         await audioEl.play();
       } catch (e) {
-        console.warn('Audio unavailable:', e.message);
+        console.error('Audio error:', e);
       }
     }
 
-    function unmute() {
-      audioEl.muted = false;
-      if (ac && ac.state === 'suspended') ac.resume();
-    }
-
-    initAudio();
-    document.addEventListener('click',      unmute, { once: true });
-    document.addEventListener('touchstart', unmute, { once: true, passive: true });
+    document.addEventListener('click',      start, { once: true });
+    document.addEventListener('touchstart', start, { once: true, passive: true });
 
     function readAudio() {
       if (!analyser) return;
