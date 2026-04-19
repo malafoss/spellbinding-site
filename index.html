@@ -123,18 +123,23 @@
       if (started) return;
       started = true;
       try {
+        // play() must fire before new AudioContext() — on Android Chrome,
+        // constructing AudioContext consumes the user gesture token first.
+        audioEl = new Audio('spellcasting.m4a');
+        audioEl.loop = true;
+        const playPromise = audioEl.play();
+
         ac = new (window.AudioContext || window.webkitAudioContext)();
         analyser = ac.createAnalyser();
         analyser.fftSize = 2048;
         analyser.smoothingTimeConstant = 0.75;
         freqData = new Uint8Array(analyser.frequencyBinCount);
 
-        audioEl = new Audio('spellcasting.m4a');
-        audioEl.loop = true;
         const src = ac.createMediaElementSource(audioEl);
         src.connect(analyser);
         analyser.connect(ac.destination);
-        await Promise.all([ac.resume(), audioEl.play()]);
+
+        await Promise.all([ac.resume(), playPromise]);
       } catch (e) {
         console.error('Audio error:', e.message);
       }
