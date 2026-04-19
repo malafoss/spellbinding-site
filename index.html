@@ -146,8 +146,8 @@
       for (let i = 120; i < freqData.length; i++) h += freqData[i];
       const rawHigh = h / ((freqData.length - 120) * 255);
 
-      sBass += (rawBass - sBass) * 0.25;
-      sHigh += (rawHigh - sHigh) * 0.25;
+      sBass += (rawBass - sBass) * 0.4;
+      sHigh += (rawHigh - sHigh) * 0.55;
     }
 
     // ── Molten surface ───────────────────────────────────────────────────────
@@ -161,7 +161,7 @@
     let mt = 0;
 
     function sY(i) {
-      return H * 0.70 + Math.sin(mt * wFreq[i] + wPhase[i]) * wAmp[i] * (1 + sBass * 2.8);
+      return H * 0.70 + Math.sin(mt * wFreq[i] + wPhase[i]) * wAmp[i] * (1 + sBass * 6);
     }
 
     function drawMolten() {
@@ -184,8 +184,8 @@
       ctx.closePath();
 
       const gr = ctx.createLinearGradient(0, base - 50, 0, H);
-      gr.addColorStop(0,    `rgba(240,65,0,${0.08 + sBass * 0.55})`);
-      gr.addColorStop(0.18, `rgba(160,28,0,${0.55 + sBass * 0.25})`);
+      gr.addColorStop(0,    `rgba(240,65,0,${0.08 + sBass * 0.9})`);
+      gr.addColorStop(0.18, `rgba(160,28,0,${0.55 + sBass * 0.4})`);
       gr.addColorStop(0.55, 'rgba(45,4,0,0.88)');
       gr.addColorStop(1,    '#000');
       ctx.fillStyle = gr;
@@ -196,7 +196,7 @@
       ctx.save();
       const glow = ctx.createLinearGradient(0, base - 80, 0, base + 60);
       glow.addColorStop(0,   'transparent');
-      glow.addColorStop(0.5, `rgba(255,85,0,${0.03 + sBass * 0.20})`);
+      glow.addColorStop(0.5, `rgba(255,85,0,${0.03 + sBass * 0.55})`);
       glow.addColorStop(1,   'transparent');
       ctx.fillStyle = glow;
       ctx.fillRect(0, base - 80, W, 140);
@@ -205,7 +205,7 @@
       // Ambient heat rising from below
       ctx.save();
       const amb = ctx.createRadialGradient(W / 2, H, 0, W / 2, H, H * 0.85);
-      amb.addColorStop(0,   `rgba(200,35,0,${0.05 + sBass * 0.12})`);
+      amb.addColorStop(0,   `rgba(200,35,0,${0.05 + sBass * 0.35})`);
       amb.addColorStop(0.6, 'transparent');
       ctx.fillStyle = amb;
       ctx.fillRect(0, 0, W, H);
@@ -231,7 +231,7 @@
 
     // ── Sparks ───────────────────────────────────────────────────────────────
     const sparks = [];
-    const MAX_SPARKS = 450;
+    const MAX_SPARKS = 700;
 
     class Spark {
       constructor(x, y, e) {
@@ -312,16 +312,16 @@
 
     // ── Spawn logic ──────────────────────────────────────────────────────────
     function spawnParticles(dt) {
-      const rate = (2 + sHigh * 52) * dt;
+      const rate = (3 + sHigh * 120) * dt;
       const n    = Math.floor(rate) + (Math.random() < (rate % 1) ? 1 : 0);
       for (let i = 0; i < n && sparks.length < MAX_SPARKS; i++) {
         const xi = (Math.random() * N) | 0;
         const x  = (xi / N) * W + (Math.random() - 0.5) * 44;
         const y  = sY(xi) + (Math.random() - 0.5) * 12;
-        const e  = 0.45 + sHigh * 1.6 + Math.random() * 0.55;
+        const e  = 0.5 + sHigh * 3.5 + Math.random() * 0.5;
         sparks.push(new Spark(x, y, e));
       }
-      if (embers.length < MAX_EMBERS && Math.random() < (0.022 + sBass * 0.09) * dt * 60) {
+      if (embers.length < MAX_EMBERS && Math.random() < (0.03 + sBass * 0.35) * dt * 60) {
         embers.push(new Ember());
       }
     }
@@ -346,7 +346,7 @@
       last = t;
 
       readAudio();
-      mt += 0.003 + sBass * 0.013;
+      mt += 0.003 + sBass * 0.04;
 
       ctx.clearRect(0, 0, W, H);
       drawMolten();
