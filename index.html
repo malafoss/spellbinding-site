@@ -122,7 +122,6 @@
       started = true;
       try {
         ac = new (window.AudioContext || window.webkitAudioContext)();
-        await ac.resume();
         analyser = ac.createAnalyser();
         analyser.fftSize = 2048;
         analyser.smoothingTimeConstant = 0.75;
@@ -133,14 +132,22 @@
         const src = ac.createMediaElementSource(audioEl);
         src.connect(analyser);
         analyser.connect(ac.destination);
+
+        // play() must be called without any prior awaits to stay within the
+        // iOS user-gesture context; resume AudioContext after
         await audioEl.play();
+        if (ac.state === 'suspended') ac.resume();
       } catch (e) {
         console.error('Audio error:', e);
       }
     }
 
+    let lastInteraction = 0;
     function handleInteraction(e) {
-      if (e.target.closest && e.target.closest('a')) return; // let links through
+      if (e.target.closest && e.target.closest('a')) return;
+      const now = Date.now();
+      if (now - lastInteraction < 300) return; // debounce touch+click double-fire
+      lastInteraction = now;
       if (!started) {
         start();
       } else if (audioEl) {
