@@ -65,8 +65,6 @@
   <div id="text">Something is forming</div>
   <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
 
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
   <script>
   // Copyright © 2026 Spellbinding. All rights reserved.
   (function () {
@@ -336,20 +334,16 @@
     function heatColor(t) {
       if (t > 0.75) {
         const p = (t - 0.75) / 0.25;
-        // bright violet → near-white lavender
         return `rgb(${(200 + p * 40) | 0},${(80 + p * 130) | 0},255)`;
       }
       if (t > 0.50) {
         const p = (t - 0.50) / 0.25;
-        // #a000c8 → bright violet
         return `rgb(${(160 + p * 40) | 0},${(p * 80) | 0},${(200 + p * 55) | 0})`;
       }
       if (t > 0.25) {
         const p = (t - 0.25) / 0.25;
-        // deep purple → #a000c8
         return `rgb(${(90 + p * 70) | 0},0,${(120 + p * 80) | 0})`;
       }
-      // dying: smoky dark purple
       const p = t / 0.25;
       return `rgb(${(40 + p * 50) | 0},${(10 * p) | 0},${(55 + p * 65) | 0})`;
     }
