@@ -133,10 +133,10 @@
         src.connect(analyser);
         analyser.connect(ac.destination);
 
-        // play() must be called without any prior awaits to stay within the
-        // iOS user-gesture context; resume AudioContext after
-        await audioEl.play();
-        if (ac.state === 'suspended') ac.resume();
+        // Fire resume and play concurrently — both need the gesture context.
+        // Awaiting resume() first deadlocks Android; awaiting play() first
+        // deadlocks Android when the context is suspended.
+        await Promise.all([ac.resume(), audioEl.play()]);
       } catch (e) {
         console.error('Audio error:', e);
       }
