@@ -3,13 +3,370 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spellbinding Site</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Spellbinding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: #000;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    #canvas {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+    }
+
+    #grain {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0.09;
+    }
+
+    #text {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.4rem, 9vw, 7rem);
+      color: #fff;
+      letter-spacing: 0.07em;
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    #contact {
+      position: fixed;
+      bottom: 1.75rem; right: 2rem;
+      z-index: 3;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(0.6rem, 1.4vw, 0.78rem);
+      color: rgba(200,200,200,0.55);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      transition: color 0.3s;
+    }
+    #contact:hover { color: rgba(255,255,255,0.9); }
+  </style>
 </head>
 <body>
-  <main>
-    <h1>Hello, World!</h1>
-    <p>Welcome to the spellbinding site.</p>
-  </main>
+  <canvas id="canvas"></canvas>
+  <canvas id="grain"></canvas>
+  <div id="text">Something is forming.</div>
+  <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
+
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Canvas ──────────────────────────────────────────────────────────────
+    const canvas  = document.getElementById('canvas');
+    const ctx     = canvas.getContext('2d');
+    const grainEl = document.getElementById('grain');
+    const gCtx    = grainEl.getContext('2d');
+    const textEl  = document.getElementById('text');
+
+    let W = 0, H = 0;
+    function resize() {
+      W = canvas.width = grainEl.width  = window.innerWidth;
+      H = canvas.height = grainEl.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
+
+    // ── Film grain (small offscreen, tiled up) ───────────────────────────────
+    const GW = 384, GH = 256;
+    const grainOff  = document.createElement('canvas');
+    grainOff.width  = GW; grainOff.height = GH;
+    const gOff      = grainOff.getContext('2d');
+    const grainBuf  = gOff.createImageData(GW, GH);
+    let   grainTick = 0;
+
+    function updateGrain() {
+      if (++grainTick % 3 !== 0) return;
+      const d = grainBuf.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const v = (Math.random() * 255) | 0;
+        d[i] = d[i+1] = d[i+2] = v;
+        d[i+3] = (Math.random() * 55) | 0;
+      }
+      gOff.putImageData(grainBuf, 0, 0);
+      gCtx.clearRect(0, 0, W, H);
+      gCtx.drawImage(grainOff, 0, 0, W, H);
+    }
+
+    // ── Audio ────────────────────────────────────────────────────────────────
+    let analyser = null, freqData = null, audioLive = false;
+    let sBass = 0, sHigh = 0;
+
+    async function startAudio() {
+      if (audioLive) return;
+      audioLive = true;
+      try {
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = ac.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.82;
+        freqData = new Uint8Array(analyser.frequencyBinCount);
+
+        const res = await fetch('riffi.mp3');
+        const buf = await ac.decodeAudioData(await res.arrayBuffer());
+        const src = ac.createBufferSource();
+        src.buffer = buf; src.loop = true;
+        src.connect(analyser);
+        analyser.connect(ac.destination);
+        src.start();
+      } catch (e) {
+        console.warn('Audio unavailable:', e.message);
+      }
+    }
+
+    document.addEventListener('click',      startAudio, { once: true });
+    document.addEventListener('touchstart', startAudio, { once: true, passive: true });
+
+    function readAudio() {
+      if (!analyser) return;
+      analyser.getByteFrequencyData(freqData);
+
+      let b = 0;
+      for (let i = 0; i < 8; i++) b += freqData[i];
+      const rawBass = b / (8 * 255);
+
+      let h = 0;
+      for (let i = 120; i < freqData.length; i++) h += freqData[i];
+      const rawHigh = h / ((freqData.length - 120) * 255);
+
+      sBass += (rawBass - sBass) * 0.25;
+      sHigh += (rawHigh - sHigh) * 0.25;
+    }
+
+    // ── Molten surface ───────────────────────────────────────────────────────
+    const N = 72;
+    const wPhase = [], wFreq = [], wAmp = [];
+    for (let i = 0; i <= N; i++) {
+      wPhase.push(Math.random() * Math.PI * 2);
+      wFreq.push(0.18 + Math.random() * 0.55);
+      wAmp.push(10 + Math.random() * 30);
+    }
+    let mt = 0;
+
+    function sY(i) {
+      return H * 0.70 + Math.sin(mt * wFreq[i] + wPhase[i]) * wAmp[i] * (1 + sBass * 2.8);
+    }
+
+    function drawMolten() {
+      const base = H * 0.70;
+
+      // Pool fill
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+
+      let px = 0, py = sY(0);
+      ctx.lineTo(px, py);
+      for (let i = 1; i <= N; i++) {
+        const x = (i / N) * W, y = sY(i);
+        ctx.quadraticCurveTo(px, py, (px + x) / 2, (py + y) / 2);
+        px = x; py = y;
+      }
+      ctx.lineTo(W, py);
+      ctx.lineTo(W, H);
+      ctx.closePath();
+
+      const gr = ctx.createLinearGradient(0, base - 50, 0, H);
+      gr.addColorStop(0,    `rgba(240,65,0,${0.08 + sBass * 0.55})`);
+      gr.addColorStop(0.18, `rgba(160,28,0,${0.55 + sBass * 0.25})`);
+      gr.addColorStop(0.55, 'rgba(45,4,0,0.88)');
+      gr.addColorStop(1,    '#000');
+      ctx.fillStyle = gr;
+      ctx.fill();
+      ctx.restore();
+
+      // Surface emission band
+      ctx.save();
+      const glow = ctx.createLinearGradient(0, base - 80, 0, base + 60);
+      glow.addColorStop(0,   'transparent');
+      glow.addColorStop(0.5, `rgba(255,85,0,${0.03 + sBass * 0.20})`);
+      glow.addColorStop(1,   'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, base - 80, W, 140);
+      ctx.restore();
+
+      // Ambient heat rising from below
+      ctx.save();
+      const amb = ctx.createRadialGradient(W / 2, H, 0, W / 2, H, H * 0.85);
+      amb.addColorStop(0,   `rgba(200,35,0,${0.05 + sBass * 0.12})`);
+      amb.addColorStop(0.6, 'transparent');
+      ctx.fillStyle = amb;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+
+    // ── Heat color ───────────────────────────────────────────────────────────
+    function heatColor(t) {
+      if (t > 0.75) {
+        const p = (t - 0.75) / 0.25;
+        return `rgb(255,${(200 + p * 55) | 0},${(p * 180) | 0})`;
+      }
+      if (t > 0.50) {
+        const p = (t - 0.50) / 0.25;
+        return `rgb(255,${(80 + p * 120) | 0},0)`;
+      }
+      if (t > 0.25) {
+        const p = (t - 0.25) / 0.25;
+        return `rgb(255,${(p * 80) | 0},0)`;
+      }
+      return `rgb(${(120 + (t / 0.25) * 135) | 0},0,0)`;
+    }
+
+    // ── Sparks ───────────────────────────────────────────────────────────────
+    const sparks = [];
+    const MAX_SPARKS = 450;
+
+    class Spark {
+      constructor(x, y, e) {
+        this.x = x; this.y = y;
+        this.vx = (Math.random() - 0.5) * 2.4 * e;
+        this.vy = -(1.2 + Math.random() * 3.4) * e;
+        this.life  = 1;
+        this.decay = 0.006 + Math.random() * 0.022;
+        this.r     = 0.7 + Math.random() * 1.7;
+        this.trail = [];
+      }
+      update() {
+        this.trail.push([this.x, this.y]);
+        if (this.trail.length > 5) this.trail.shift();
+        this.vx += (Math.random() - 0.5) * 0.08;
+        this.x  += this.vx;
+        this.y  += this.vy;
+        this.vy += 0.065;
+        this.life -= this.decay;
+      }
+      draw() {
+        const col = heatColor(this.life);
+        for (let i = 0; i < this.trail.length; i++) {
+          ctx.globalAlpha = (i / this.trail.length) * this.life * 0.28;
+          ctx.fillStyle   = col;
+          ctx.beginPath();
+          ctx.arc(this.trail[i][0], this.trail[i][1], this.r * 0.5, 0, 6.2832);
+          ctx.fill();
+        }
+        ctx.globalAlpha = this.life;
+        ctx.shadowBlur  = 5 + this.life * 8;
+        ctx.shadowColor = 'rgba(255,100,0,0.9)';
+        ctx.fillStyle   = col;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, 6.2832);
+        ctx.fill();
+        ctx.shadowBlur  = 0;
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // ── Embers (large, slow, heavy) ──────────────────────────────────────────
+    const embers = [];
+    const MAX_EMBERS = 22;
+
+    class Ember {
+      constructor() {
+        const xi = (Math.random() * N) | 0;
+        this.x  = (xi / N) * W;
+        this.y  = sY(xi);
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = -(0.1 + Math.random() * 0.45);
+        this.life   = 1;
+        this.decay  = 0.0018 + Math.random() * 0.004;
+        this.r      = 2.5 + Math.random() * 3.8;
+        this.wobble = Math.random() * Math.PI * 2;
+      }
+      update() {
+        this.wobble += 0.035;
+        this.vx += Math.sin(this.wobble) * 0.04;
+        this.x  += this.vx;
+        this.y  += this.vy;
+        this.vy += 0.004;
+        this.life -= this.decay;
+      }
+      draw() {
+        ctx.globalAlpha = this.life * 0.70;
+        ctx.shadowBlur  = 14;
+        ctx.shadowColor = `rgba(255,55,0,${this.life})`;
+        ctx.fillStyle   = heatColor(this.life * 0.55);
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r * this.life, 0, 6.2832);
+        ctx.fill();
+        ctx.shadowBlur  = 0;
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // ── Spawn logic ──────────────────────────────────────────────────────────
+    function spawnParticles(dt) {
+      const rate = (2 + sHigh * 52) * dt;
+      const n    = Math.floor(rate) + (Math.random() < (rate % 1) ? 1 : 0);
+      for (let i = 0; i < n && sparks.length < MAX_SPARKS; i++) {
+        const xi = (Math.random() * N) | 0;
+        const x  = (xi / N) * W + (Math.random() - 0.5) * 44;
+        const y  = sY(xi) + (Math.random() - 0.5) * 12;
+        const e  = 0.45 + sHigh * 1.6 + Math.random() * 0.55;
+        sparks.push(new Spark(x, y, e));
+      }
+      if (embers.length < MAX_EMBERS && Math.random() < (0.022 + sBass * 0.09) * dt * 60) {
+        embers.push(new Ember());
+      }
+    }
+
+    // ── Text flicker ─────────────────────────────────────────────────────────
+    function flicker(t) {
+      const v = 0.88 + 0.12 * (
+        Math.sin(t * 0.55) * 0.5 +
+        Math.sin(t * 2.1)  * 0.3 +
+        Math.sin(t * 6.7)  * 0.2
+      );
+      textEl.style.opacity = v;
+    }
+
+    // ── Loop ─────────────────────────────────────────────────────────────────
+    let last = 0;
+
+    function loop(ts) {
+      requestAnimationFrame(loop);
+      const t  = ts * 0.001;
+      const dt = Math.min(t - last, 0.05);
+      last = t;
+
+      readAudio();
+      mt += 0.003 + sBass * 0.013;
+
+      ctx.clearRect(0, 0, W, H);
+      drawMolten();
+      spawnParticles(dt);
+
+      for (let i = embers.length - 1; i >= 0; i--) {
+        embers[i].update(); embers[i].draw();
+        if (embers[i].life <= 0 || embers[i].y < -30) embers.splice(i, 1);
+      }
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        sparks[i].update(); sparks[i].draw();
+        if (sparks[i].life <= 0 || sparks[i].y > H + 10) sparks.splice(i, 1);
+      }
+
+      updateGrain();
+      flicker(t);
+    }
+
+    requestAnimationFrame(loop);
+  })();
+  </script>
 </body>
 </html>
