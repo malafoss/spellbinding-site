@@ -52,7 +52,7 @@
       width: 100%; height: 100%;
       z-index: 2;
       pointer-events: none;
-      opacity: 0.09;
+      opacity: 0.11;
     }
 
     #text {
@@ -132,12 +132,12 @@
     let   grainTick = 0;
 
     function updateGrain() {
-      if (++grainTick % 3 !== 0) return;
+      if (++grainTick % 2 !== 0) return;
       const d = grainBuf.data;
       for (let i = 0; i < d.length; i += 4) {
         const v = (Math.random() * 255) | 0;
         d[i] = d[i+1] = d[i+2] = v;
-        d[i+3] = (Math.random() * 55) | 0;
+        d[i+3] = (Math.random() * 65) | 0;
       }
       gOff.putImageData(grainBuf, 0, 0);
       gCtx.clearRect(0, 0, W, H);
