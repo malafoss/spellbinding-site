@@ -109,23 +109,25 @@
     let analyser = null, freqData = null, audioLive = false;
     let sBass = 0, sHigh = 0;
 
+    const audioEl = new Audio('spellcasting.m4a');
+    audioEl.loop = true;
+    audioEl.preload = 'auto';
+
     async function startAudio() {
       if (audioLive) return;
       audioLive = true;
       try {
         const ac = new (window.AudioContext || window.webkitAudioContext)();
+        if (ac.state === 'suspended') await ac.resume();
         analyser = ac.createAnalyser();
         analyser.fftSize = 512;
         analyser.smoothingTimeConstant = 0.82;
         freqData = new Uint8Array(analyser.frequencyBinCount);
 
-        const res = await fetch('spellcasting.m4a');
-        const buf = await ac.decodeAudioData(await res.arrayBuffer());
-        const src = ac.createBufferSource();
-        src.buffer = buf; src.loop = true;
+        const src = ac.createMediaElementSource(audioEl);
         src.connect(analyser);
         analyser.connect(ac.destination);
-        src.start();
+        await audioEl.play();
       } catch (e) {
         console.warn('Audio unavailable:', e.message);
       }
