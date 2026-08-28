@@ -48,7 +48,7 @@ $(STAMP): $(YAML) $(CONTENT) $(PHOTOS)
 	@$(CONTENT)
 	@touch $@
 
-.PHONY: all photos content check clean help
+.PHONY: all photos content check test clean help
 
 all: content ## Build everything that is out of date (default)
 
@@ -59,6 +59,9 @@ content: $(STAMP) ## Only render the YAML files into the page
 check: ## Verify photos and page are current; exits non-zero if not
 	@$(PREP) --check
 	@$(CONTENT) --check
+
+test: content ## Run the smoke tests against a headless browser
+	@./tests/smoke.py
 
 clean: ## Delete the generated photos and the build stamp
 	@rm -rf $(OUT_DIR) .make
