@@ -139,11 +139,13 @@
       /* at least a full viewport so the hero can scroll fully out of the way */
       min-height: 100vh;
       padding: clamp(2.5rem, 12vh, 8rem) clamp(1.25rem, 6vw, 4rem) clamp(3rem, 8vh, 5rem);
-      background: linear-gradient(to bottom,
-        rgba(0,0,0,0) 0,
-        rgba(2,2,2,0.72) 14%,
-        #020202 34%,
-        #020202 100%);
+      /* deliberately no background: the animation stays visible behind the
+         listings and is never dimmed. Legibility comes from text-shadow. */
+    }
+
+    /* Carry the text over bright parts of the animation without veiling it */
+    #calendar, #site-footer {
+      text-shadow: 0 1px 2px #000, 0 0 10px rgba(0,0,0,0.9), 0 0 22px rgba(0,0,0,0.6);
     }
 
     .wrap { max-width: 46rem; margin: 0 auto; }
@@ -175,9 +177,10 @@
       gap: 0.4rem 1.75rem;
       align-items: baseline;
       padding: 1.25rem 0;
-      border-top: 1px solid rgba(255,255,255,0.09);
+      border-top: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 -1px 0 rgba(0,0,0,0.55);
     }
-    .gig:last-child { border-bottom: 1px solid rgba(255,255,255,0.09); }
+    .gig:last-child { border-bottom: 1px solid rgba(255,255,255,0.16); }
 
     .gig time {
       font-family: 'Share Tech Mono', monospace;
@@ -223,7 +226,6 @@
     #site-footer {
       position: relative;
       z-index: 4;
-      background: #020202;
       padding: 0 clamp(1.25rem, 6vw, 4rem) 2.5rem;
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(0.6rem, 1.4vw, 0.78rem);
@@ -236,7 +238,7 @@
       align-items: baseline;
       justify-content: space-between;
       padding-top: 1.75rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      border-top: 1px solid rgba(255,255,255,0.14);
     }
     #site-footer a {
       color: rgba(200,200,200,0.55);
@@ -795,18 +797,17 @@
       mt     += 0.008 + sBass * 0.04 + kick * 0.02;
       scroll += 0.0003 + sBass * 0.0002; // slow left drift, wraps seamlessly
 
-      // Nothing to draw once the hero is off-screen — saves battery while reading.
-      if (pageOff < H) {
-        ctx.clearRect(0, 0, W, H);
-        drawMolten();
-        spawnParticles(dt);
+      // Always draw: the animation stays visible behind the listings, so it
+      // must keep running the whole way down the page.
+      ctx.clearRect(0, 0, W, H);
+      drawMolten();
+      spawnParticles(dt);
 
-        tick(embers,     p => p.life <= 0 || p.y < -30);
-        tick(sparks,     p => p.life <= 0 || p.y > H + 10);
-        tick(lightSparks,p => p.life <= 0 || p.y > H + 10);
+      tick(embers,     p => p.life <= 0 || p.y < -30);
+      tick(sparks,     p => p.life <= 0 || p.y > H + 10);
+      tick(lightSparks,p => p.life <= 0 || p.y > H + 10);
 
-        updateGrain();
-      }
+      updateGrain();
       flicker(t);
     }
 
