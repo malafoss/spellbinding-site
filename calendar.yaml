@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # Edit this file, then regenerate the page:
 #
-#     uv run scripts/build-calendar.py
+#     ./scripts/build-calendar.py
 #
 # That rewrites everything between the GIGS:START and GIGS:END markers in
 # public/index.html. Do not hand-edit the page between those markers — the next

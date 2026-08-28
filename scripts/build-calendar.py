@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script --quiet
 # /// script
 # requires-python = ">=3.9"
 # dependencies = ["pyyaml"]
@@ -8,7 +8,11 @@
 Everything between the GIGS:START and GIGS:END markers is replaced. Run after
 editing calendar.yaml:
 
-    uv run scripts/build-calendar.py          # or: python3 scripts/build-calendar.py
+    ./scripts/build-calendar.py
+
+The shebang runs it through uv, which resolves pyyaml from the inline metadata
+below, so no virtualenv setup is needed. `uv run scripts/build-calendar.py` and
+`python3 scripts/build-calendar.py` (with pyyaml installed) both work too.
 
 Use --check to verify the page is up to date without writing (exit 1 if not).
 """
