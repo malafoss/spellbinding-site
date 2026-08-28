@@ -36,11 +36,12 @@
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    html, body {
-      width: 100%; height: 100%;
+    html { height: 100%; }
+    body {
+      width: 100%;
+      min-height: 100%;
       background: #000;
-      overflow: hidden;
-      cursor: pointer;
+      color: #dcdcdc;
     }
 
     #canvas {
@@ -62,7 +63,7 @@
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      z-index: 3;
+      z-index: 5;
       width: clamp(11rem, 44vmin, 26rem);
       height: auto;
       pointer-events: none;
@@ -70,9 +71,9 @@
     }
 
     #contact {
-      position: fixed;
+      position: absolute;
       bottom: 1.75rem; right: 2rem;
-      z-index: 3;
+      z-index: 2;
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(0.6rem, 1.4vw, 0.78rem);
       color: rgba(200,200,200,0.55);
@@ -83,9 +84,9 @@
     #contact:hover { color: rgba(255,255,255,0.9); }
 
     #instagram {
-      position: fixed;
+      position: absolute;
       bottom: 1.75rem; left: 2rem;
-      z-index: 3;
+      z-index: 2;
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(0.6rem, 1.4vw, 0.78rem);
       color: rgba(200,200,200,0.55);
@@ -94,14 +95,222 @@
       transition: color 0.3s;
     }
     #instagram:hover { color: rgba(255,255,255,0.9); }
+
+    /* ── Hero: full viewport, click target for audio ─────────────────────── */
+    #hero {
+      position: relative;
+      height: 100vh;
+      z-index: 3;
+      cursor: pointer;
+    }
+    @supports (height: 100svh) {
+      #hero { height: 100svh; }
+      #calendar { min-height: 100svh; }
+    }
+
+    #scroll-cue {
+      position: absolute;
+      left: 50%; bottom: 4.5rem;
+      transform: translateX(-50%);
+      z-index: 2;
+      pointer-events: none;
+      user-select: none;
+    }
+    #scroll-cue span {
+      display: block;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      color: rgba(210,210,210,0.75);
+      animation: cue 2.6s ease-in-out infinite;
+    }
+    @keyframes cue {
+      0%, 100% { transform: translateY(0);      opacity: 0.4; }
+      50%      { transform: translateY(0.4rem); opacity: 0.9; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #scroll-cue span { animation: none; opacity: 0.65; }
+    }
+
+    /* ── Calendar: rises out of the animation, then goes opaque ──────────── */
+    #calendar {
+      position: relative;
+      z-index: 4;
+      /* at least a full viewport so the hero can scroll fully out of the way */
+      min-height: 100vh;
+      padding: clamp(2.5rem, 12vh, 8rem) clamp(1.25rem, 6vw, 4rem) clamp(3rem, 8vh, 5rem);
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,0) 0,
+        rgba(2,2,2,0.72) 14%,
+        #020202 34%,
+        #020202 100%);
+    }
+
+    .wrap { max-width: 46rem; margin: 0 auto; }
+
+    #calendar h2 {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(1.1rem, 3.4vw, 1.5rem);
+      font-weight: 400;
+      letter-spacing: 0.34em;
+      text-transform: uppercase;
+      color: #f2f2f2;
+      margin-bottom: 0.4rem;
+    }
+
+    .note {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      line-height: 1.7;
+      color: rgba(190,190,190,0.5);
+      margin-bottom: 2.4rem;
+    }
+
+    .gigs { list-style: none; }
+
+    .gig {
+      display: grid;
+      grid-template-columns: 6.5rem 1fr auto;
+      gap: 0.4rem 1.75rem;
+      align-items: baseline;
+      padding: 1.25rem 0;
+      border-top: 1px solid rgba(255,255,255,0.09);
+    }
+    .gig:last-child { border-bottom: 1px solid rgba(255,255,255,0.09); }
+
+    .gig time {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      color: rgba(215,215,215,0.9);
+      white-space: nowrap;
+    }
+    .gig .dow { color: rgba(180,180,180,0.55); margin-right: 0.5em; }
+
+    .venue {
+      display: block;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      color: #f0f0f0;
+    }
+    .city {
+      display: block;
+      margin-top: 0.2rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(185,185,185,0.5);
+    }
+
+    .status {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(190,150,220,0.75);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 34rem) {
+      .gig { grid-template-columns: 1fr; gap: 0.35rem; }
+      .status { margin-top: 0.35rem; }
+    }
+
+    /* ── Footer ──────────────────────────────────────────────────────────── */
+    #site-footer {
+      position: relative;
+      z-index: 4;
+      background: #020202;
+      padding: 0 clamp(1.25rem, 6vw, 4rem) 2.5rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(0.6rem, 1.4vw, 0.78rem);
+      letter-spacing: 0.1em;
+    }
+    #site-footer .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 2rem;
+      align-items: baseline;
+      justify-content: space-between;
+      padding-top: 1.75rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    #site-footer a {
+      color: rgba(200,200,200,0.55);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    #site-footer a:hover { color: rgba(255,255,255,0.9); }
+    #site-footer .copy { color: rgba(150,150,150,0.4); }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
   <canvas id="grain"></canvas>
   <img id="logo" src="logo.png" alt="Spellbinding" width="1254" height="1254">
-  <a id="instagram" href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
-  <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
+
+  <section id="hero" aria-label="Spellbinding">
+    <a id="instagram" href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
+    <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
+    <div id="scroll-cue" aria-hidden="true"><span>Scroll</span></div>
+  </section>
+
+  <main id="calendar" aria-labelledby="calendar-title">
+    <div class="wrap">
+      <h2 id="calendar-title">Live</h2>
+
+      <!-- PLACEHOLDER LISTINGS: replace the three <li> below with real dates,
+           and delete the <p class="note"> above them, before publishing.
+           Keep the datetime attribute in ISO form (YYYY-MM-DD). -->
+      <p class="note">
+        Placeholder listings &mdash; not real dates. Replace before publishing.
+      </p>
+
+      <ul class="gigs">
+        <li class="gig">
+          <time datetime="2026-10-03"><span class="dow">Sat</span>03 Oct 2026</time>
+          <div>
+            <span class="venue">Example Venue</span>
+            <span class="city">City</span>
+          </div>
+          <span class="status">Placeholder</span>
+        </li>
+        <li class="gig">
+          <time datetime="2026-10-17"><span class="dow">Sat</span>17 Oct 2026</time>
+          <div>
+            <span class="venue">Example Venue</span>
+            <span class="city">City</span>
+          </div>
+          <span class="status">Placeholder</span>
+        </li>
+        <li class="gig">
+          <time datetime="2026-11-07"><span class="dow">Sat</span>07 Nov 2026</time>
+          <div>
+            <span class="venue">Example Venue</span>
+            <span class="city">City</span>
+          </div>
+          <span class="status">Placeholder</span>
+        </li>
+      </ul>
+
+      <!-- When there are no dates, drop the <ul> above and use this instead:
+      <p class="note">No dates announced yet. Follow
+        <a href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
+        for announcements.</p>
+      -->
+    </div>
+  </main>
+
+  <footer id="site-footer">
+    <div class="wrap">
+      <a href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
+      <a href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
+      <p class="copy">&copy; 2026 Spellbinding</p>
+    </div>
+  </footer>
 
   <script>
   // Copyright © 2026 Spellbinding. All rights reserved.
@@ -181,9 +390,25 @@
       }
     }
 
+    // ── Scroll position ──────────────────────────────────────────────────────
+    // The logo is fixed, so without this it would sit on top of the listings.
+    // Fade it over the first half viewport, before the calendar arrives.
+    const cueEl = document.getElementById('scroll-cue');
+    let pageOff = 0, fade = 1, lastBright = -1;
+
+    function readScroll() {
+      pageOff = window.scrollY || window.pageYOffset || 0;
+      const span = Math.max(1, window.innerHeight * 0.5);
+      fade = Math.max(0, Math.min(1, 1 - pageOff / span));
+    }
+    readScroll();
+    window.addEventListener('scroll', readScroll, { passive: true });
+    window.addEventListener('resize', readScroll, { passive: true });
+
     let lastInteraction = 0;
     function handleInteraction(e) {
-      if (e.target.closest && e.target.closest('a')) return;
+      // links, and anything in the scrolled content, are not play/pause targets
+      if (e.target.closest && e.target.closest('a, #calendar, #site-footer')) return;
       const now = Date.now();
       if (now - lastInteraction < 500) return;
       lastInteraction = now;
@@ -194,8 +419,21 @@
       }
     }
 
-    document.addEventListener('click',   handleInteraction);
-    document.addEventListener('touchend', handleInteraction);
+    document.addEventListener('click', handleInteraction);
+
+    // A scroll gesture also ends in touchend — only treat a still finger as a tap.
+    let tX = 0, tY = 0, touchMoved = false;
+    document.addEventListener('touchstart', e => {
+      const t = e.changedTouches[0];
+      tX = t.clientX; tY = t.clientY; touchMoved = false;
+    }, { passive: true });
+    document.addEventListener('touchmove', e => {
+      const t = e.changedTouches[0];
+      if (Math.abs(t.clientX - tX) > 10 || Math.abs(t.clientY - tY) > 10) touchMoved = true;
+    }, { passive: true });
+    document.addEventListener('touchend', e => {
+      if (!touchMoved) handleInteraction(e);
+    });
 
     function readAudio() {
       if (!analyser) return;
@@ -525,7 +763,14 @@
         Math.sin(t * 2.1)  * 0.3 +
         Math.sin(t * 6.7)  * 0.2
       );
-      logoEl.style.opacity = v;
+      logoEl.style.opacity = (v * fade).toFixed(3);
+      cueEl.style.opacity  = fade.toFixed(3);
+      // darken, rather than only thinning out
+      const b = 0.45 + 0.55 * fade;
+      if (Math.abs(b - lastBright) > 0.02) {
+        logoEl.style.filter = 'brightness(' + b.toFixed(2) + ')';
+        lastBright = b;
+      }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -550,15 +795,18 @@
       mt     += 0.008 + sBass * 0.04 + kick * 0.02;
       scroll += 0.0003 + sBass * 0.0002; // slow left drift, wraps seamlessly
 
-      ctx.clearRect(0, 0, W, H);
-      drawMolten();
-      spawnParticles(dt);
+      // Nothing to draw once the hero is off-screen — saves battery while reading.
+      if (pageOff < H) {
+        ctx.clearRect(0, 0, W, H);
+        drawMolten();
+        spawnParticles(dt);
 
-      tick(embers,     p => p.life <= 0 || p.y < -30);
-      tick(sparks,     p => p.life <= 0 || p.y > H + 10);
-      tick(lightSparks,p => p.life <= 0 || p.y > H + 10);
+        tick(embers,     p => p.life <= 0 || p.y < -30);
+        tick(sparks,     p => p.life <= 0 || p.y > H + 10);
+        tick(lightSparks,p => p.life <= 0 || p.y > H + 10);
 
-      updateGrain();
+        updateGrain();
+      }
       flicker(t);
     }
 
