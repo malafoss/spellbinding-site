@@ -37,6 +37,35 @@ def die(msg):
     sys.exit(f"build-calendar: {msg}")
 
 
+def parse_time(raw, where):
+    """Normalise an event time to "HH:MM", or None when not given.
+
+    YAML 1.1 reads an unquoted 20:00 as the sexagesimal integer 1200, while
+    09:05 stays a string because the leading zero blocks that rule. Both forms
+    are accepted here so the file behaves the same either way.
+    """
+    if raw is None or raw == "":
+        return None
+    if isinstance(raw, bool):
+        die(f"{where}: time {raw!r} is not a time")
+    if isinstance(raw, dt.time):
+        return f"{raw.hour:02d}:{raw.minute:02d}"
+    if isinstance(raw, int):
+        if 0 <= raw <= 23 * 60 + 59:
+            return f"{raw // 60:02d}:{raw % 60:02d}"
+        die(
+            f'{where}: time was read as the number {raw}. Quote it, '
+            f'e.g. time: "20:00"'
+        )
+    m = re.fullmatch(r"(\d{1,2}):(\d{2})", str(raw).strip())
+    if not m:
+        die(f'{where}: time {raw!r} is not HH:MM, e.g. time: "20:00"')
+    hh, mm = int(m.group(1)), int(m.group(2))
+    if hh > 23 or mm > 59:
+        die(f"{where}: time {raw!r} is not a valid 24-hour time")
+    return f"{hh:02d}:{mm:02d}"
+
+
 def load_events():
     if not YAML_PATH.exists():
         die(f"{YAML_PATH.name} not found")
@@ -78,6 +107,7 @@ def load_events():
         events.append(
             {
                 "date": date,
+                "time": parse_time(ev.get("time"), where),
                 "venue": str(ev["venue"]),
                 "city": str(ev["city"]),
                 "status": str(ev["status"]) if ev.get("status") else "",
@@ -85,7 +115,7 @@ def load_events():
             }
         )
 
-    events.sort(key=lambda e: e["date"])
+    events.sort(key=lambda e: (e["date"], e["time"] or ""))
     return note, events
 
 
@@ -111,10 +141,12 @@ def render(note, events):
             if ev["url"]:
                 venue = f'<a href="{e(ev["url"])}">{venue}</a>'
             out.append(f'{INDENT}  <li class="gig">')
+            stamp = d.isoformat() + (f"T{ev['time']}" if ev["time"] else "")
+            at = f'<span class="at">{ev["time"]}</span>' if ev["time"] else ""
             out.append(
-                f'{INDENT}    <time datetime="{d.isoformat()}">'
+                f'{INDENT}    <time datetime="{stamp}">'
                 f'<span class="dow">{d:%a}</span>'
-                f"{d.day:02d} {d:%b} {d.year}</time>"
+                f"{d.day:02d} {d:%b} {d.year}{at}</time>"
             )
             out.append(f"{INDENT}    <div>")
             out.append(f'{INDENT}      <span class="venue">{venue}</span>')

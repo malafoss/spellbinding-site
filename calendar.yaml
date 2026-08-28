@@ -8,8 +8,12 @@
 # public/index.html. Do not hand-edit the page between those markers — the next
 # run overwrites it.
 #
-# Events are sorted by date automatically, so you can add them in any order.
+# Events are sorted by date and time automatically, so add them in any order.
 # The weekday ("Sat") is derived from the date; you never type it yourself.
+#
+# ALWAYS QUOTE THE TIME:  time: "20:00"
+# Unquoted, YAML reads 20:00 as the number 1200. The script recovers from that,
+# but quoting keeps the file meaning what it says.
 # ---------------------------------------------------------------------------
 
 # A line shown above the list. Set to "" to remove it entirely.
@@ -19,17 +23,19 @@ note: "Placeholder listings — not real dates. Replace before publishing."
 # which is the safe thing to publish when nothing is confirmed.
 events:
   - date:   2026-10-03          # required, YYYY-MM-DD
+    time:   "20:00"             # optional, 24-hour "HH:MM"; omit if not announced
     venue:  Example Venue       # required
     city:   City                # required
     status: Placeholder         # optional, right-hand column; omit for none
     # url:  https://…           # optional, turns the venue into a link
 
   - date:   2026-10-17
+    time:   "21:30"
     venue:  Example Venue
     city:   City
     status: Placeholder
 
-  - date:   2026-11-07
+  - date:   2026-11-07          # time omitted: no time is shown
     venue:  Example Venue
     city:   City
     status: Placeholder
@@ -37,6 +43,7 @@ events:
 # Real entries look like this:
 #
 #   - date:   2026-11-21
+#     time:   "20:00"
 #     venue:  Tavastia
 #     city:   Helsinki
 #     status: Tickets
