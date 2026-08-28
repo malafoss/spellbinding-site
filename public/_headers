@@ -1,0 +1,28 @@
+# Applied by Cloudflare's static asset serving.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  # 'unsafe-inline' is unavoidable while the CSS and JS live inline in the page.
+  # It still blocks any externally injected script, framing, form posts and
+  # object embeds, which is the bulk of the value here.
+  Content-Security-Policy: default-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; connect-src 'none'
+
+# Photos are regenerated under the same filenames, so they are not immutable —
+# a week is long enough to help and short enough that a replacement lands.
+/photos/*
+  Cache-Control: public, max-age=604800
+
+/logo.png
+  Cache-Control: public, max-age=604800
+/share.jpg
+  Cache-Control: public, max-age=604800
+/apple-touch-icon.png
+  Cache-Control: public, max-age=604800
+/favicon.ico
+  Cache-Control: public, max-age=604800
+/spellcasting.m4a
+  Cache-Control: public, max-age=604800

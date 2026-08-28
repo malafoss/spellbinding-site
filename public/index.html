@@ -9,11 +9,26 @@
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://spellbinding.band">
   <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#080808">
 
   <meta property="og:type"        content="music.band">
+  <meta property="og:site_name"   content="Spellbinding">
+  <meta property="og:locale"      content="en">
   <meta property="og:title"       content="Spellbinding">
   <meta property="og:description" content="Spellbinding — a new band.">
   <meta property="og:url"         content="https://spellbinding.band">
+  <!-- Without an image, a shared link renders as a bare text row on every
+       platform. Absolute URL is required: relative paths are not resolved. -->
+  <meta property="og:image"       content="https://spellbinding.band/share.jpg">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt"   content="The Spellbinding logo">
+
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="Spellbinding">
+  <meta name="twitter:description" content="Spellbinding — a new band.">
+  <meta name="twitter:image"       content="https://spellbinding.band/share.jpg">
 
   <script type="application/ld+json">
   {
@@ -22,6 +37,8 @@
     "name": "Spellbinding",
     "url": "https://spellbinding.band",
     "email": "contact@spellbinding.band",
+    "logo": "https://spellbinding.band/logo.png",
+    "image": "https://spellbinding.band/share.jpg",
     "sameAs": [
       "https://www.instagram.com/spellbinding.band/",
       "https://linktr.ee/spellbinding.band"
@@ -91,6 +108,7 @@
     }
 
     #wordmark {
+      font-weight: 400;          /* it is an h1; do not inherit bold */
       margin-top: clamp(0.5rem, 1.6vmin, 1rem);
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(0.8rem, 3.4vmin, 1.6rem);
@@ -118,7 +136,7 @@
     }
     #play-toggle:hover {
       color: #fff;
-      border-color: rgba(255,255,255,0.42);
+      border-color: rgba(255,255,255,0.62);
       background: rgba(0,0,0,0.6);
     }
     #play-toggle:focus-visible {
@@ -162,7 +180,7 @@
     }
     #scroll-cue svg { width: 0.95rem; height: 0.95rem; fill: currentColor; display: block; }
     #scroll-cue:hover { color: #fff; }
-    #scroll-cue:hover span { border-color: rgba(255,255,255,0.45); }
+    #scroll-cue:hover span { border-color: rgba(255,255,255,0.62); }
     #scroll-cue:focus-visible {
       outline: 2px solid rgba(196,150,240,0.85);
       outline-offset: 4px;
@@ -210,7 +228,7 @@
       border: 0;
       cursor: pointer;
       font-family: 'Share Tech Mono', monospace;
-      color: rgba(200,200,200,0.5);
+      color: rgba(200,200,200,0.59);
       transition: color 0.25s, background 0.25s, border-color 0.25s;
     }
     .tab-link {
@@ -234,7 +252,7 @@
       flex: 0 0 auto;
     }
     .tab-arrow svg { width: 0.9rem; height: 0.9rem; fill: currentColor; display: block; }
-    .tab-arrow:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+    .tab-arrow:hover { color: #fff; border-color: rgba(255,255,255,0.62); }
     .tab-arrow[disabled] { opacity: 0.25; cursor: default; }
 
     .tab-link:focus-visible, .tab-arrow:focus-visible {
@@ -336,7 +354,7 @@
       font-family: 'Share Tech Mono', monospace;
       font-size: 0.64rem;
       letter-spacing: 0.1em;
-      color: rgba(190,190,190,0.6);
+      color: rgba(190,190,190,0.62);
     }
 
     /* ── Gallery ─────────────────────────────────────────────────────────── */
@@ -354,7 +372,7 @@
       border: 1px solid rgba(255,255,255,0.12);
     }
     .shots a { display: block; text-decoration: none; color: inherit; }
-    .shots a:hover img { border-color: rgba(255,255,255,0.45); }
+    .shots a:hover img { border-color: rgba(255,255,255,0.62); }
     .shots .frame { position: relative; display: block; }
     /* Video tiles are a poster plus a play badge, linking out — no embeds, so
        the page stays a couple of static files with no third-party scripts. */
@@ -380,7 +398,7 @@
       font-family: 'Share Tech Mono', monospace;
       font-size: 0.64rem;
       letter-spacing: 0.1em;
-      color: rgba(190,190,190,0.6);
+      color: rgba(190,190,190,0.62);
     }
 
     /* Carry the text over bright parts of the animation without veiling it */
@@ -404,7 +422,7 @@
       font-size: 0.72rem;
       letter-spacing: 0.08em;
       line-height: 1.7;
-      color: rgba(190,190,190,0.5);
+      color: rgba(190,190,190,0.62);
       margin-bottom: 1.5rem;
     }
 
@@ -428,7 +446,7 @@
       color: rgba(215,215,215,0.9);
       white-space: nowrap;
     }
-    .gig .dow { color: rgba(180,180,180,0.55); margin-right: 0.5em; }
+    .gig .dow { color: rgba(180,180,180,0.66); margin-right: 0.5em; }
     .gig .at {
       margin-left: 0.7em;
       font-size: 0.72rem;
@@ -458,7 +476,7 @@
       font-size: 0.72rem;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: rgba(185,185,185,0.5);
+      color: rgba(185,185,185,0.64);
     }
 
     .status {
@@ -557,12 +575,12 @@
       border-top: 1px solid rgba(255,255,255,0.14);
     }
     #site-footer a {
-      color: rgba(200,200,200,0.55);
+      color: rgba(200,200,200,0.59);
       text-decoration: none;
       transition: color 0.3s;
     }
     #site-footer a:hover { color: rgba(255,255,255,0.9); }
-    #site-footer .copy { color: rgba(150,150,150,0.4); }
+    #site-footer .copy { color: rgba(150,150,150,0.8); }
 
     /* ── Overrides ────────────────────────────────────────────────────────────
        Everything below must stay last: these rules have the same specificity as
@@ -640,8 +658,10 @@
   <canvas id="canvas"></canvas>
   <canvas id="grain"></canvas>
   <div id="brand">
-    <img id="logo" src="logo.png" alt="Spellbinding" width="1254" height="1254">
-    <p id="wordmark">Spellbinding</p>
+    <!-- alt is empty on purpose: the h1 beside it already says the name, and a
+         duplicate would be announced twice. -->
+    <img id="logo" src="logo.png" alt="" width="1254" height="1254">
+    <h1 id="wordmark">Spellbinding</h1>
   </div>
 
   <button id="play-toggle" type="button" aria-label="Play music" aria-pressed="false">
@@ -791,8 +811,17 @@
     const gCtx    = grainEl.getContext('2d');
     const brandEl = document.getElementById('brand');
 
+    // Someone who has asked their system to reduce motion should not get a
+    // full-screen particle animation. The scene is still drawn — it is the
+    // identity of the page — but as a still frame, with no drifting waves, no
+    // sparks and no flicker.
+    const calm = !!(window.matchMedia
+                    && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    let calmDrawn = false;
+
     let W = 0, H = 0;
     function resize() {
+      calmDrawn = false;          // redraw the still frame at the new size
       W = canvas.width = grainEl.width  = window.innerWidth;
       H = canvas.height = grainEl.height = window.innerHeight;
     }
@@ -1531,7 +1560,7 @@
 
     // ── Logo flicker ─────────────────────────────────────────────────────────
     function flicker(t) {
-      const v = 0.88 + 0.12 * (
+      const v = calm ? 1 : 0.88 + 0.12 * (
         Math.sin(t * 0.55) * 0.5 +
         Math.sin(t * 2.1)  * 0.3 +
         Math.sin(t * 6.7)  * 0.2
@@ -1567,6 +1596,19 @@
       readScroll();
       applyVolume();
       readAudio();
+
+      if (calm) {
+        // One still frame, then nothing but the scroll-driven fade.
+        if (!calmDrawn) {
+          ctx.clearRect(0, 0, W, H);
+          drawMolten();
+          updateGrain();
+          calmDrawn = true;
+        }
+        flicker(t);
+        return;
+      }
+
       mt     += 0.008 + sBass * 0.04 + kick * 0.02;
       scroll += 0.0003 + sBass * 0.0002; // slow left drift, wraps seamlessly
 
