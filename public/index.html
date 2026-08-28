@@ -209,11 +209,7 @@
     .tab-arrow svg { width: 0.9rem; height: 0.9rem; fill: currentColor; display: block; }
     .tab-arrow:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
     .tab-arrow[disabled] { opacity: 0.25; cursor: default; }
-    /* A page arrow that cannot go anywhere is not shown at all. visibility
-       rather than display, so the counter does not jump sideways as it comes
-       and goes. The strip's own arrows stay dimmed instead of vanishing,
-       since they show how far the three panels run. */
-    #page-nav .tab-arrow[disabled] { visibility: hidden; }
+
     .tab-link:focus-visible, .tab-arrow:focus-visible {
       outline: 2px solid rgba(196,150,240,0.85);
       outline-offset: 2px;
@@ -256,18 +252,15 @@
       padding: clamp(0.9rem, 3vh, 1.75rem) clamp(1.25rem, 6vw, 4rem) clamp(1rem, 3vh, 2rem);
     }
 
-    #page-nav { display: flex; align-items: center; gap: 0.3rem; margin-left: 0.75rem; }
-    /* An author display: flex outranks the UA's [hidden] { display: none }, so
-       the hidden attribute alone would never hide this. */
-    #page-nav[hidden] { display: none; }
-    #page-count {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.62rem;
-      letter-spacing: 0.1em;
-      color: rgba(200,200,200,0.6);
-      min-width: 2.6em;
-      text-align: center;
-    }
+    /* Paging arrows live at the top and bottom edges of the page they belong
+       to, rather than in the tab bar: a page only ever gets the arrows that
+       lead somewhere, so there is no state to keep in step and nothing added
+       beside the tab labels. */
+    .page { display: flex; flex-direction: column; }
+    .page > .wrap { flex: 1 1 auto; }
+    .page-arrow { align-self: center; flex: 0 0 auto; }
+    .page-arrow.up   { margin-bottom: 0.7rem; }
+    .page-arrow.down { margin-top: 0.7rem; }
 
     @media (prefers-reduced-motion: no-preference) {
       #tabs { scroll-behavior: smooth; }
@@ -624,15 +617,6 @@
         <button class="tab-arrow" id="tab-next" type="button" aria-label="Next section">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7z"/></svg>
         </button>
-        <span id="page-nav" hidden>
-          <button class="tab-arrow" id="page-up" type="button" aria-label="Previous page">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7z"/></svg>
-          </button>
-          <span id="page-count" aria-live="polite"></span>
-          <button class="tab-arrow" id="page-down" type="button" aria-label="Next page">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7z"/></svg>
-          </button>
-        </span>
       </div>
     </nav>
 
@@ -948,98 +932,70 @@
       const tab = tabEls[activeTab];
       if (tab) tab.scrollTop = 0;
       paintTabs();
-      paintPages();
     }
 
     linkEls.forEach((l, i) => l.addEventListener('click', () => goToTab(i)));
     prevBtn.addEventListener('click', () => goToTab(activeTab - 1));
     nextBtn.addEventListener('click', () => goToTab(activeTab + 1));
 
-    let stripTimer = 0, stripFrame = 0;
+    let stripFrame = 0;
     stripEl.addEventListener('scroll', () => {
-      // Repaint on every frame of the gesture so the labels and the page
-      // counter follow the strip instead of lagging a debounce behind.
+      // Repaint on every frame of the gesture, so the active label follows the
+      // strip rather than lagging a debounce behind it.
       if (!stripFrame) {
         stripFrame = requestAnimationFrame(() => {
           stripFrame = 0;
           const i = nearestTab();
           if (i !== activeTab) { activeTab = i; paintTabs(); }
-          paintPages();
         });
       }
-      clearTimeout(stripTimer);
-      stripTimer = setTimeout(paintPages, 90);
     }, { passive: true });
 
     // ── Pages within a tab ───────────────────────────────────────────────────
     // A tab whose content runs past one screenful is split into pages that snap
-    // vertically. The counter and its two arrows appear only when there is more
-    // than one, and address whichever tab is currently showing.
-    const pageNav = document.getElementById('page-nav');
-    const pageCount = document.getElementById('page-count');
-    const pageUp = document.getElementById('page-up');
-    const pageDown = document.getElementById('page-down');
+    // vertically. Each page carries its own arrows — down at its bottom edge, up
+    // at its top — so a page only shows the ones that lead somewhere and there
+    // is no shared state to keep in step with what is on screen.
+    const ARROW_UP   = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7z"/></svg>';
+    const ARROW_DOWN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7z"/></svg>';
 
-    // Deliberately the tab under the scroll position, not tabEls[activeTab]:
-    // the counter must describe what is on screen even mid-swipe, when the
-    // tracked index has not caught up yet.
-    function currentTabEl() { return tabEls[nearestTab()]; }
-
-    function pagesOf(tab) { return Array.from(tab.querySelectorAll('.page')); }
-
-    function pageIndex(tab) {
-      const h = tab.clientHeight || 1;
-      return Math.max(0, Math.min(pagesOf(tab).length - 1, Math.round(tab.scrollTop / h)));
+    function scrollToPage(tab, target) {
+      // Rect maths rather than scrollIntoView, which would also scroll the
+      // window; only the tab should move.
+      const top = target.getBoundingClientRect().top
+                - tab.getBoundingClientRect().top + tab.scrollTop;
+      tab.scrollTo({ top: top, behavior: 'smooth' });
     }
 
-    function paintPages() {
-      const tab = currentTabEl();
-      if (!tab) return;
-      const n = pagesOf(tab).length;
-      if (n < 2) {
-        pageNav.hidden = true;
-        pageCount.textContent = '';   // never leave a stale count behind
-        return;
-      }
-      const i = pageIndex(tab);
-      pageNav.hidden = false;
-      pageCount.textContent = (i + 1) + '/' + n;
-      pageUp.disabled = i === 0;
-      pageDown.disabled = i === n - 1;
+    function buildPageArrows() {
+      tabEls.forEach(tab => {
+        const pages = Array.from(tab.querySelectorAll('.page'));
+        tab.querySelectorAll('.page-arrow').forEach(b => b.remove());
+        if (pages.length < 2) return;
+        pages.forEach((pageEl, i) => {
+          if (i > 0) {
+            const up = document.createElement('button');
+            up.type = 'button';
+            up.className = 'tab-arrow page-arrow up';
+            up.setAttribute('aria-label', 'Previous page');
+            up.innerHTML = ARROW_UP;
+            up.addEventListener('click', () => scrollToPage(tab, pages[i - 1]));
+            pageEl.insertBefore(up, pageEl.firstChild);
+          }
+          if (i < pages.length - 1) {
+            const down = document.createElement('button');
+            down.type = 'button';
+            down.className = 'tab-arrow page-arrow down';
+            down.setAttribute('aria-label', 'Next page');
+            down.innerHTML = ARROW_DOWN;
+            down.addEventListener('click', () => scrollToPage(tab, pages[i + 1]));
+            pageEl.appendChild(down);
+          }
+        });
+      });
     }
 
-    function goToPage(delta) {
-      const tab = currentTabEl();      // the visible one
-      if (!tab) return;
-      const i = Math.max(0, Math.min(pagesOf(tab).length - 1, pageIndex(tab) + delta));
-      tab.scrollTo({ top: i * tab.clientHeight, behavior: 'smooth' });
-      setTimeout(paintPages, 320);
-    }
-
-    pageUp.addEventListener('click', () => goToPage(-1));
-    pageDown.addEventListener('click', () => goToPage(1));
-
-    tabEls.forEach(tab => {
-      let t = 0;
-      tab.addEventListener('scroll', () => {
-        clearTimeout(t);
-        t = setTimeout(paintPages, 90);
-      }, { passive: true });
-    });
-
-    // Left/right arrow keys move between panels while the bar has focus.
-    document.getElementById('tabbar').addEventListener('keydown', e => {
-      if (e.key === 'ArrowRight') { goToTab(activeTab + 1); e.preventDefault(); }
-      if (e.key === 'ArrowLeft')  { goToTab(activeTab - 1); e.preventDefault(); }
-    });
-
-    // Open on Live, and keep that panel centred when the viewport resizes.
-    goToTab(activeTab, false);
-    paintPages();
-    window.addEventListener('resize', () => {
-      goToTab(activeTab, false);
-      paintPages();
-    }, { passive: true });
+    buildPageArrows();
 
     // ── Lightbox ─────────────────────────────────────────────────────────────
     // Tiles link to the image file, so the gallery still works without this;
