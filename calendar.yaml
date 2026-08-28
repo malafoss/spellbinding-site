@@ -17,7 +17,7 @@
 # ---------------------------------------------------------------------------
 
 # A line shown above the list. Set to "" to remove it entirely.
-note: "Placeholder listings — not real dates. Replace before publishing."
+note: "Placeholder listings — not real dates yet. Stay tuned."
 
 # An empty list (events: []) renders the "no dates announced yet" state,
 # which is the safe thing to publish when nothing is confirmed.
