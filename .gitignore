@@ -3,3 +3,6 @@ riffi.m4a
 *.aup3
 .wrangler/
 .make/
+
+# local notes for Claude Code, not for the public repo
+CLAUDE.md
