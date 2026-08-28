@@ -483,8 +483,19 @@
       display: grid;
       place-items: center;
       padding: clamp(1rem, 4vw, 3rem);
-      background: rgba(0,0,0,0.93);
+      /* Only a light scrim: the page content is hidden outright (below) rather
+         than covered, so the animation carries on behind the photo instead of
+         being blacked out. A heavier backdrop here would dim it, and a lighter
+         one used to let the tab labels and footer show through. */
+      background: rgba(0,0,0,0.45);
     }
+
+    /* Zoomed: hide the page itself, keep the canvas and grain running. The play
+       button goes too — the close button sits in the same corner. */
+    body.zoomed #hero,
+    body.zoomed #screen-two,
+    body.zoomed #brand,
+    body.zoomed #play-toggle { visibility: hidden; }
     /* An author display: grid outranks the UA's [hidden] { display: none }. */
     #lightbox[hidden] { display: none; }
 
@@ -1148,6 +1159,7 @@
       lbCap.textContent = text;
       lbCap.hidden = !text;
       lbEl.hidden = false;
+      document.body.classList.add('zoomed');
       lbReturn = document.activeElement;
       lbClose.focus();
     }
@@ -1155,6 +1167,7 @@
     function closeLightbox() {
       if (lbEl.hidden) return;
       lbEl.hidden = true;
+      document.body.classList.remove('zoomed');
       lbImg.removeAttribute('src');      // let the decoded copy go
       if (lbReturn && lbReturn.focus) lbReturn.focus();
       lbReturn = null;
