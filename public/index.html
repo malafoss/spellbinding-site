@@ -22,7 +22,10 @@
     "name": "Spellbinding",
     "url": "https://spellbinding.band",
     "email": "contact@spellbinding.band",
-    "sameAs": "https://www.instagram.com/spellbinding.band/",
+    "sameAs": [
+      "https://www.instagram.com/spellbinding.band/",
+      "https://linktr.ee/spellbinding.band"
+    ],
     "foundingLocation": {
       "@type": "Place",
       "addressCountry": "FI"
@@ -59,20 +62,39 @@
       opacity: 0.11;
     }
 
-    #logo {
+    #brand {
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 5;
-      /* The logo is centred, so it grows downwards into the scroll cue on a
-         short viewport. Capped by the height left above the cue, and with no
-         rem floor above 4rem — an 11rem floor would win over the cap on a
-         short screen and put the logo back on top of the cue. */
-      --logo-cap: calc(100vh - 14rem);
-      width: max(4rem, min(44vmin, 26rem, var(--logo-cap)));
-      height: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       pointer-events: none;
       user-select: none;
+    }
+
+    #logo {
+      display: block;
+      /* The mark is centred, so it grows downwards into the scroll cue on a
+         short viewport. Capped by the height left above the cue — now also
+         leaving room for the wordmark — and with no rem floor above 4rem: an
+         11rem floor would win over the cap and put it back over the cue. */
+      --logo-cap: calc(100vh - 17rem);
+      width: max(4rem, min(44vmin, 26rem, var(--logo-cap)));
+      height: auto;
+    }
+
+    #wordmark {
+      margin-top: clamp(0.5rem, 1.6vmin, 1rem);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(0.8rem, 3.4vmin, 1.6rem);
+      letter-spacing: 0.32em;
+      /* letter-spacing adds a trailing gap, so nudge back to stay centred */
+      text-indent: 0.32em;
+      color: rgba(244,244,244,0.94);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.6);
+      white-space: nowrap;
     }
 
     /* ── Play/pause: fixed top-right, above everything, never fades ──────── */
@@ -593,14 +615,17 @@
     @supports (height: 100svh) {
       #hero { height: 100svh; }
       #screen-two { min-height: 100svh; }
-      #logo { --logo-cap: calc(100svh - 14rem); }
+      #logo { --logo-cap: calc(100svh - 17rem); }
     }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
   <canvas id="grain"></canvas>
-  <img id="logo" src="logo.png" alt="Spellbinding" width="1254" height="1254">
+  <div id="brand">
+    <img id="logo" src="logo.png" alt="Spellbinding" width="1254" height="1254">
+    <p id="wordmark">Spellbinding</p>
+  </div>
 
   <button id="play-toggle" type="button" aria-label="Play music" aria-pressed="false">
     <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
@@ -714,6 +739,7 @@
 
     <footer id="site-footer">
       <div class="wrap">
+        <a href="https://linktr.ee/spellbinding.band">all links</a>
         <a href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
         <a href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
         <p class="copy">&copy; 2026 Spellbinding</p>
@@ -746,7 +772,7 @@
     const ctx     = canvas.getContext('2d');
     const grainEl = document.getElementById('grain');
     const gCtx    = grainEl.getContext('2d');
-    const logoEl  = document.getElementById('logo');
+    const brandEl = document.getElementById('brand');
 
     let W = 0, H = 0;
     function resize() {
@@ -1491,12 +1517,12 @@
         Math.sin(t * 2.1)  * 0.3 +
         Math.sin(t * 6.7)  * 0.2
       );
-      logoEl.style.opacity = (v * fade).toFixed(3);
+      brandEl.style.opacity = (v * fade).toFixed(3);
       cueEl.style.opacity  = fade.toFixed(3);
       // darken, rather than only thinning out
       const b = 0.45 + 0.55 * fade;
       if (Math.abs(b - lastBright) > 0.02) {
-        logoEl.style.filter = 'brightness(' + b.toFixed(2) + ')';
+        brandEl.style.filter = 'brightness(' + b.toFixed(2) + ')';
         lastBright = b;
       }
     }
