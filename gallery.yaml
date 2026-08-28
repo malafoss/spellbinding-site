@@ -29,27 +29,32 @@
 heading: "Gallery"
 
 # A line under the heading. Set to "" to remove it.
-note: "Photos coming soon."
+note: ""
 
 per_page: 6
 
-# An empty list renders the note alone, which is the safe thing to publish
-# before there is anything to show.
-items: []
+items:
+  - image: image1.jpg
+    alt: "Bassist singing into a mic, lit by green LED strips"
+  - image: image2.jpg
+    alt: "Drummer in sunglasses behind the cymbals, drums lit red"
+  - image: image3.jpg
+    alt: "Singer with a guitar beside the keyboard player at a Nord Stage"
+  - image: image4.jpg
+    alt: "Vocalist in a varsity jacket singing, drummer behind"
+  - image: image5.jpg
+    alt: "Wide view of the band on a dark stage, seen from the audience"
 
-# With content it looks like this:
+# Add a short caption to any item with text:, which takes the same Markdown
+# as the story — for example:
 #
-# items:
-#   - image: photos/live-01.jpg
-#     alt: "Spellbinding on stage at Tavastia, lit red"
+#   - image: image1.jpg
+#     alt: "Bassist singing into a mic, lit by green LED strips"
 #     text: "Tavastia, Nov 2026"
 #
-#   - image: photos/live-02.jpg
-#     alt: "The guitarist mid-solo"
-#     href: https://www.instagram.com/p/XXXXXXXXX/
-#     text: "More on [Instagram](https://www.instagram.com/spellbinding.band/)"
+# A video is a link plus a poster image inside public/:
 #
 #   - video: https://www.youtube.com/watch?v=XXXXXXXXXXX
-#     poster: photos/video-thumb-01.jpg
+#     poster: image2.jpg
 #     alt: "Still from the Spellcasting live video"
-#     text: "Spellcasting — live at Tavastia"
+#     text: "Spellcasting — live"

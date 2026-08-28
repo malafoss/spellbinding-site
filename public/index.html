@@ -252,6 +252,9 @@
     }
 
     #page-nav { display: flex; align-items: center; gap: 0.3rem; margin-left: 0.75rem; }
+    /* An author display: flex outranks the UA's [hidden] { display: none }, so
+       the hidden attribute alone would never hide this. */
+    #page-nav[hidden] { display: none; }
     #page-count {
       font-family: 'Share Tech Mono', monospace;
       font-size: 0.62rem;
@@ -636,7 +639,23 @@
              Edit the YAML and re-run; do not hand-edit this block. -->
         <div class="page"><div class="wrap">
           <h2 id="gallery-title">Gallery</h2>
-          <p class="note">Photos coming soon.</p>
+          <ul class="shots">
+            <li><figure>
+              <span class="frame"><img src="image1.jpg" alt="Bassist singing into a mic, lit by green LED strips" loading="lazy"></span>
+            </figure></li>
+            <li><figure>
+              <span class="frame"><img src="image2.jpg" alt="Drummer in sunglasses behind the cymbals, drums lit red" loading="lazy"></span>
+            </figure></li>
+            <li><figure>
+              <span class="frame"><img src="image3.jpg" alt="Singer with a guitar beside the keyboard player at a Nord Stage" loading="lazy"></span>
+            </figure></li>
+            <li><figure>
+              <span class="frame"><img src="image4.jpg" alt="Vocalist in a varsity jacket singing, drummer behind" loading="lazy"></span>
+            </figure></li>
+            <li><figure>
+              <span class="frame"><img src="image5.jpg" alt="Wide view of the band on a dark stage, seen from the audience" loading="lazy"></span>
+            </figure></li>
+          </ul>
         </div></div>
         <!-- GALLERY:END -->
       </section>
