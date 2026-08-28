@@ -1,0 +1,20 @@
+# Spellbinding — the Story tab
+# ---------------------------------------------------------------------------
+# Edit this file, then regenerate the page:
+#
+#     ./scripts/build-content.py
+#
+# It rewrites the block between STORY:START and STORY:END in public/index.html.
+# Do not hand-edit the page between those markers — the next run overwrites it.
+# ---------------------------------------------------------------------------
+
+# Shown as the tab's own heading.
+heading: "The Story"
+
+# Paragraphs, rendered in order. An empty list renders a short placeholder.
+# Long text is fine, but the tab is one screenful: past roughly 1200 characters
+# it will scroll inside the panel rather than fit. The build warns you.
+paragraphs:
+  - "Placeholder text — replace with the band's story."
+  - "Two or three short paragraphs work best here. Keep it to a screenful so
+     the panel does not need scrolling."

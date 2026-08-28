@@ -1,0 +1,31 @@
+# Spellbinding — the Gallery tab
+# ---------------------------------------------------------------------------
+# Edit this file, then regenerate the page:
+#
+#     ./scripts/build-content.py
+#
+# It rewrites the block between GALLERY:START and GALLERY:END in
+# public/index.html. Do not hand-edit the page between those markers.
+#
+# Image paths are relative to public/, so public/photos/live-01.jpg is
+# written as "photos/live-01.jpg". The build fails if a file is missing,
+# rather than shipping a broken image.
+# ---------------------------------------------------------------------------
+
+heading: "Gallery"
+
+# A line under the heading. Set to "" to remove it.
+note: "Photos coming soon."
+
+# An empty list renders the note alone, which is the safe thing to publish
+# before there are any photos.
+images: []
+
+# With photos it looks like this:
+#
+# images:
+#   - src: photos/live-01.jpg      # required, relative to public/
+#     alt: "Spellbinding at Tavastia"   # required, describes the image
+#     caption: "Tavastia, Nov 2026"     # optional, shown under the image
+#   - src: photos/live-02.jpg
+#     alt: "Guitarist mid-solo, lit red"

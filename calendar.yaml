@@ -2,10 +2,10 @@
 # ---------------------------------------------------------------------------
 # Edit this file, then regenerate the page:
 #
-#     ./scripts/build-calendar.py
+#     ./scripts/build-content.py
 #
-# That rewrites everything between the GIGS:START and GIGS:END markers in
-# public/index.html. Do not hand-edit the page between those markers — the next
+# That rewrites the block between the GIGS:START and GIGS:END markers in
+# public/index.html (and the Story and Gallery blocks from their own files). Do not hand-edit the page between those markers — the next
 # run overwrites it.
 #
 # Events are sorted by date and time automatically, so add them in any order.
