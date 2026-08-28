@@ -782,6 +782,15 @@
     // left the first screen looking dead at -21 dB.
     const VIS_MIN = 0.45, VIS_MAX = 1.00;
 
+    // Half a second, so play eases in and pause eases out instead of the music
+    // snapping on and off. A pause is only applied to the element once the fade
+    // has finished, and the deadline is wall-clock: ac.currentTime stands still
+    // while the context is suspended, which would block the volume for good.
+    const FADE_MS = 500;
+    let fadeEndsAt = 0;      // performance.now() while a fade is running
+    let pauseTimer = 0;
+    let pausing = false;     // a fade-out is in flight, pause not applied yet
+
     function buildGraph() {
       if (ac) return;
       audioEl = new Audio('spellcasting.m4a');
@@ -798,7 +807,7 @@
       freqData = new Uint8Array(analyser.frequencyBinCount);
 
       gainNode = ac.createGain();                 // what you hear
-      gainNode.gain.value = VOL_MIN * VOL_MIN;
+      gainNode.gain.value = 0;                    // every start fades up from silence
       visGain = ac.createGain();                  // what the animation sees
       visGain.gain.value = VIS_MIN;
 
@@ -821,10 +830,46 @@
       return ac && ac.state === 'running' && audioEl && !audioEl.paused;
     }
 
+    function scrollAmp() {
+      const t = Math.max(0, Math.min(1, pageOff / maxScroll));
+      const slider = VOL_MIN + (VOL_MAX - VOL_MIN) * t;
+      return slider * slider;
+    }
+
+    function rampTo(value) {
+      const g = gainNode.gain, now = ac.currentTime;
+      g.cancelScheduledValues(now);
+      g.setValueAtTime(g.value, now);       // hold where it is, then move
+      g.linearRampToValueAtTime(value, now + FADE_MS / 1000);
+      fadeEndsAt = performance.now() + FADE_MS;
+      lastVol = -1;                         // let applyVolume take over after
+    }
+
+    function fadeIn() {
+      clearTimeout(pauseTimer);
+      pauseTimer = 0;
+      pausing = false;
+      gainNode.gain.cancelScheduledValues(ac.currentTime);
+      gainNode.gain.setValueAtTime(0, ac.currentTime);
+      rampTo(scrollAmp());
+    }
+
+    function fadeOutThenPause() {
+      pausing = true;
+      rampTo(0);
+      clearTimeout(pauseTimer);
+      pauseTimer = setTimeout(() => {
+        pauseTimer = 0;
+        pausing = false;
+        if (audioEl) audioEl.pause();
+        syncButton();
+      }, FADE_MS);
+    }
+
     const btnEl = document.getElementById('play-toggle');
 
     function syncButton() {
-      const playing = audioReady();
+      const playing = audioReady() && !pausing;
       btnEl.dataset.playing = playing ? 'true' : 'false';
       btnEl.setAttribute('aria-label', playing ? 'Pause music' : 'Play music');
       btnEl.setAttribute('aria-pressed', playing ? 'true' : 'false');
@@ -847,13 +892,18 @@
       if (!ac || !gainNode) return;
       const t = Math.max(0, Math.min(1, pageOff / maxScroll));
       const slider = VOL_MIN + (VOL_MAX - VOL_MIN) * t;
+      // The visual ramp is independent of play/pause, so it always tracks.
+      visGain.gain.setTargetAtTime(VIS_MIN + (VIS_MAX - VIS_MIN) * t, ac.currentTime, 0.12);
+      // Leave the audible gain alone while a fade owns it, or scrolling would
+      // overwrite the ramp mid-fade.
+      if (performance.now() < fadeEndsAt || pausing) return;
+      // And leave it at whatever the fade-out left it while stopped: otherwise
+      // it climbs back to the scroll target the moment the pause lands.
+      if (!audioEl || audioEl.paused) return;
       if (Math.abs(slider - lastVol) < 0.004) return;   // called every frame
       lastVol = slider;
       // Squared: a slider reads as loudness, and loudness is not amplitude.
-      const amp = slider * slider;
-      // Ramp, so unlocking partway down the page fades in instead of jumping.
-      gainNode.gain.setTargetAtTime(amp, ac.currentTime, 0.12);
-      visGain.gain.setTargetAtTime(VIS_MIN + (VIS_MAX - VIS_MIN) * t, ac.currentTime, 0.12);
+      gainNode.gain.setTargetAtTime(slider * slider, ac.currentTime, 0.12);
     }
 
     // ── Scroll position ──────────────────────────────────────────────────────
@@ -1051,9 +1101,12 @@
     // sets the volume, but only once playback has been started here.
     btnEl.addEventListener('click', () => {
       buildGraph();
-      if (audioReady()) {
-        audioEl.pause();
+      if (pausing) {
+        fadeIn();               // pressed again mid fade-out: come back up
+      } else if (audioReady()) {
+        fadeOutThenPause();
       } else {
+        fadeIn();               // gain to 0 first, so play rises from silence
         tryStart();
       }
       syncButton();
