@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spellbinding</title>
   <meta name="description" content="Spellbinding — a new band.">
+  <meta name="copyright" content="© 2026 Spellbinding. All rights reserved.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://spellbinding.band">
+  <link rel="icon" href="/favicon.ico" sizes="any">
 
   <meta property="og:type"        content="music.band">
   <meta property="og:title"       content="Spellbinding">
@@ -30,7 +32,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -56,16 +58,13 @@
       opacity: 0.11;
     }
 
-    #text {
+    #logo {
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 3;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(2.4rem, 9vw, 7rem);
-      color: #fff;
-      letter-spacing: 0.07em;
-      white-space: nowrap;
+      width: clamp(11rem, 44vmin, 26rem);
+      height: auto;
       pointer-events: none;
       user-select: none;
     }
@@ -100,7 +99,7 @@
 <body>
   <canvas id="canvas"></canvas>
   <canvas id="grain"></canvas>
-  <div id="text">Something is forming</div>
+  <img id="logo" src="logo.png" alt="Spellbinding" width="1254" height="1254">
   <a id="instagram" href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
   <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
 
@@ -114,7 +113,7 @@
     const ctx     = canvas.getContext('2d');
     const grainEl = document.getElementById('grain');
     const gCtx    = grainEl.getContext('2d');
-    const textEl  = document.getElementById('text');
+    const logoEl  = document.getElementById('logo');
 
     let W = 0, H = 0;
     function resize() {
@@ -519,14 +518,14 @@
       }
     }
 
-    // ── Text flicker ─────────────────────────────────────────────────────────
+    // ── Logo flicker ─────────────────────────────────────────────────────────
     function flicker(t) {
       const v = 0.88 + 0.12 * (
         Math.sin(t * 0.55) * 0.5 +
         Math.sin(t * 2.1)  * 0.3 +
         Math.sin(t * 6.7)  * 0.2
       );
-      textEl.style.opacity = v;
+      logoEl.style.opacity = v;
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
