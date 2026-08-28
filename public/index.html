@@ -70,31 +70,7 @@
       user-select: none;
     }
 
-    #contact {
-      position: absolute;
-      bottom: 1.75rem; right: 2rem;
-      z-index: 2;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(0.6rem, 1.4vw, 0.78rem);
-      color: rgba(200,200,200,0.55);
-      text-decoration: none;
-      letter-spacing: 0.1em;
-      transition: color 0.3s;
-    }
-    #contact:hover { color: rgba(255,255,255,0.9); }
 
-    #instagram {
-      position: absolute;
-      bottom: 1.75rem; left: 2rem;
-      z-index: 2;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(0.6rem, 1.4vw, 0.78rem);
-      color: rgba(200,200,200,0.55);
-      text-decoration: none;
-      letter-spacing: 0.1em;
-      transition: color 0.3s;
-    }
-    #instagram:hover { color: rgba(255,255,255,0.9); }
 
     /* ── Play/pause: fixed top-right, above everything, never fades ──────── */
     #play-toggle {
@@ -133,10 +109,7 @@
       height: 100vh;
       z-index: 3;
     }
-    @supports (height: 100svh) {
-      #hero { height: 100svh; }
-      #calendar { min-height: 100svh; }
-    }
+    @supports (height: 100svh) { #hero { height: 100svh; } }
 
     #scroll-cue {
       position: absolute;
@@ -149,9 +122,11 @@
     #scroll-cue span {
       display: block;
       font-family: 'Share Tech Mono', monospace;
-      font-size: 0.7rem;
-      letter-spacing: 0.22em;
-      color: rgba(210,210,210,0.75);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.26em;
+      color: rgba(244,244,244,0.95);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
       animation: cue 2.6s ease-in-out infinite;
     }
     @keyframes cue {
@@ -166,8 +141,6 @@
     #calendar {
       position: relative;
       z-index: 4;
-      /* at least a full viewport so the hero can scroll fully out of the way */
-      min-height: 100vh;
       padding: clamp(2.5rem, 12vh, 8rem) clamp(1.25rem, 6vw, 4rem) clamp(3rem, 8vh, 5rem);
       /* deliberately no background: the animation stays visible behind the
          listings and is never dimmed. Legibility comes from text-shadow. */
@@ -289,8 +262,6 @@
   </button>
 
   <section id="hero" aria-label="Spellbinding">
-    <a id="instagram" href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
-    <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
     <div id="scroll-cue" aria-hidden="true"><span>Scroll</span></div>
   </section>
 
@@ -348,10 +319,6 @@
     </div>
   </footer>
 
-  <!-- Sized by script: lets the footer links scroll up to the top of the
-       viewport, which is the furthest the page scrolls. -->
-  <div id="scroll-spacer" aria-hidden="true"></div>
-
   <script>
   // Copyright © 2026 Spellbinding. All rights reserved.
   (function () {
@@ -403,6 +370,9 @@
     let bassMin = 1.0, bassMax = 0.0;
     let audioEl = null;
 
+    // 30% at the top of the page, 100% at the last scroll position.
+    const VOL_MIN = 0.30, VOL_MAX = 1.00;
+
     function buildGraph() {
       if (ac) return;
       audioEl = new Audio('spellcasting.m4a');
@@ -419,7 +389,7 @@
       freqData = new Uint8Array(analyser.frequencyBinCount);
 
       gainNode = ac.createGain();
-      gainNode.gain.value = 0;              // scroll position owns the volume
+      gainNode.gain.value = VOL_MIN;        // scroll position owns the volume
 
       const src = ac.createMediaElementSource(audioEl);
       // The analyser sits BEFORE the gain, so the visuals react at full
@@ -463,8 +433,9 @@
     function applyVolume() {
       if (!ac || !gainNode) return;
       const maxS = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      const target = Math.max(0, Math.min(1, pageOff / maxS));
-      // Ramp, so unlocking partway down the page fades in instead of blasting.
+      const t = Math.max(0, Math.min(1, pageOff / maxS));
+      const target = VOL_MIN + (VOL_MAX - VOL_MIN) * t;
+      // Ramp, so unlocking partway down the page fades in instead of jumping.
       gainNode.gain.setTargetAtTime(target, ac.currentTime, 0.25);
     }
 
@@ -480,17 +451,22 @@
       fade = Math.max(0, Math.min(1, 1 - pageOff / span));
     }
     // ── Scroll extent ────────────────────────────────────────────────────────
-    // Pad the page so the last scroll position puts the footer links at the
-    // very top of the viewport — that is as far as the page may scroll.
-    const footerEl = document.getElementById('site-footer');
-    const spacerEl = document.getElementById('scroll-spacer');
+    // Scrolling stops with the "Spellbinding.band LIVE" heading at the top of
+    // the viewport. Make the distance from the heading to the bottom of the
+    // footer exactly one viewport: the footer is the last element, so the
+    // document ends there and that becomes the last scroll position, with the
+    // footer links sitting at the bottom of that final screen.
+    const footerEl  = document.getElementById('site-footer');
+    const headingEl = document.getElementById('calendar-title');
 
-    function sizeSpacer() {
-      spacerEl.style.height = '0px';
-      const footTop = footerEl.getBoundingClientRect().top + window.scrollY;
-      const docH    = document.documentElement.scrollHeight;
-      const need    = footTop + window.innerHeight - docH;
-      spacerEl.style.height = Math.max(0, Math.round(need)) + 'px';
+    function sizeLayout() {
+      footerEl.style.marginTop = '0px';
+      const headTop = headingEl.getBoundingClientRect().top + window.scrollY;
+      const footBot = footerEl.getBoundingClientRect().bottom + window.scrollY;
+      // If the listings ever grow past one viewport this clamps to 0, and the
+      // page simply scrolls further rather than clipping them.
+      const gap = window.innerHeight - (footBot - headTop);
+      footerEl.style.marginTop = Math.max(0, Math.round(gap)) + 'px';
     }
 
     function onScroll() {
@@ -499,15 +475,15 @@
     }
     function onResize() {
       resize();
-      sizeSpacer();
+      sizeLayout();
       onScroll();
     }
 
     readScroll();
-    sizeSpacer();
+    sizeLayout();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize, { passive: true });
-    window.addEventListener('load', sizeSpacer);
+    window.addEventListener('load', sizeLayout);
 
     // ── Starting playback ────────────────────────────────────────────────────
     // No click to start: the volume follows the scroll position, and playback
