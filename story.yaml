@@ -6,15 +6,38 @@
 #
 # It rewrites the block between STORY:START and STORY:END in public/index.html.
 # Do not hand-edit the page between those markers — the next run overwrites it.
+#
+# TEXT FORMATTING — a small Markdown subset, safe by construction: the text is
+# HTML-escaped first, then only these patterns become markup.
+#
+#     [label](https://example.com)   link  (http, https, mailto, or a path
+#                                           inside public/ such as photos/x.jpg)
+#     **bold**        *italic*        `code`
+#
+# Anything else, including stray < and &, is shown literally rather than
+# breaking the page. When you genuinely need raw markup, use an html: block.
+#
+# PAGES — each page is one screenful, snapping vertically inside the tab, so
+# long content stays readable instead of overflowing. Add as many as you like.
 # ---------------------------------------------------------------------------
 
-# Shown as the tab's own heading.
 heading: "The Story"
 
-# Paragraphs, rendered in order. An empty list renders a short placeholder.
-# Long text is fine, but the tab is one screenful: past roughly 1200 characters
-# it will scroll inside the panel rather than fit. The build warns you.
-paragraphs:
-  - "Placeholder text — replace with the band's story."
-  - "Two or three short paragraphs work best here. Keep it to a screenful so
-     the panel does not need scrolling."
+pages:
+  - blocks:
+      - text: >-
+          Placeholder text — replace with the band's story. This paragraph shows
+          **bold**, *italic*, `code` and a [link](https://www.instagram.com/spellbinding.band/).
+      - text: "A second paragraph on the same screenful."
+
+  # A second page. Scrolling inside the tab snaps to it.
+  - blocks:
+      - text: "This is the second screenful of the story."
+      # An image block. alt is required; caption is optional and takes the
+      # same Markdown as text.
+      # - image: photos/rehearsal.jpg
+      #   alt: "The band rehearsing in a basement"
+      #   caption: "Rehearsal, spring 2026"
+      #
+      # Raw HTML, for when the Markdown subset is not enough:
+      # - html: '<p class="note">Anything you like, passed through verbatim.</p>'

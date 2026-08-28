@@ -16,7 +16,15 @@
 # but quoting keeps the file meaning what it says.
 # ---------------------------------------------------------------------------
 
-# A line shown above the list. Set to "" to remove it entirely.
+# The tab's own heading.
+heading: "Spellbinding.band LIVE"
+
+# Split the listings into screenfuls that snap vertically inside the tab.
+# 0 or absent puts them all on one page.
+per_page: 5
+
+# A line shown above the list. Set to "" to remove it entirely. Takes the same
+# Markdown subset as story.yaml: [links](https://…), **bold**, *italic*, `code`.
 note: "Placeholder listings — not real dates yet. Stay tuned."
 
 # An empty list (events: []) renders the "no dates announced yet" state,

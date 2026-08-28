@@ -218,7 +218,11 @@
     /* Deliberately no background anywhere in here: the animation stays visible
        behind the content and is never dimmed. Legibility comes from text-shadow. */
     #tabs {
-      flex: 1 1 auto;
+      /* flex-basis 0 and min-height 0, not auto: otherwise the strip takes its
+         content height — every page of every tab stacked — and pushes the
+         second screenful past one viewport, scrolling the tab bar off the top. */
+      flex: 1 1 0;
+      min-height: 0;
       display: flex;
       overflow-x: auto;
       overflow-y: hidden;
@@ -232,25 +236,72 @@
       flex: 0 0 100%;
       min-width: 100%;
       scroll-snap-align: center;
+      /* Long content becomes several screenfuls, snapped a page at a time. The
+         padding lives on .page, so min-height:100% is the whole tab. */
       overflow-y: auto;
+      scroll-snap-type: y mandatory;
       scrollbar-width: none;
-      padding: clamp(0.9rem, 3vh, 1.75rem) clamp(1.25rem, 6vw, 4rem) clamp(1rem, 3vh, 2rem);
     }
     .tab::-webkit-scrollbar { display: none; }
+
+    .page {
+      min-height: 100%;
+      box-sizing: border-box;
+      scroll-snap-align: start;
+      padding: clamp(0.9rem, 3vh, 1.75rem) clamp(1.25rem, 6vw, 4rem) clamp(1rem, 3vh, 2rem);
+    }
+
+    #page-nav { display: flex; align-items: center; gap: 0.3rem; margin-left: 0.75rem; }
+    #page-count {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      color: rgba(200,200,200,0.6);
+      min-width: 2.6em;
+      text-align: center;
+    }
 
     @media (prefers-reduced-motion: no-preference) {
       #tabs { scroll-behavior: smooth; }
     }
 
-    /* ── Story ───────────────────────────────────────────────────────────── */
-    .story p {
+    /* ── Prose ───────────────────────────────────────────────────────────── */
+    .prose p {
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(0.74rem, 1.9vw, 0.88rem);
       line-height: 1.85;
       letter-spacing: 0.03em;
       color: rgba(226,226,226,0.88);
     }
-    .story p + p { margin-top: 1rem; }
+    .prose > * + * { margin-top: 1rem; }
+    .prose a {
+      color: rgba(214,176,246,0.95);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(214,176,246,0.45);
+    }
+    .prose a:hover { border-bottom-color: rgba(214,176,246,1); }
+    .prose strong { color: #fff; font-weight: 700; }
+    .prose em { font-style: italic; color: #f0f0f0; }
+    .prose code {
+      font-size: 0.92em;
+      padding: 0.05em 0.35em;
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+    .prose figure { margin-top: 1rem; }
+    .prose figure img {
+      display: block;
+      width: 100%;
+      max-width: 24rem;
+      height: auto;
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    .prose figcaption {
+      margin-top: 0.4rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.64rem;
+      letter-spacing: 0.1em;
+      color: rgba(190,190,190,0.6);
+    }
 
     /* ── Gallery ─────────────────────────────────────────────────────────── */
     .shots {
@@ -266,6 +317,28 @@
       object-fit: cover;
       border: 1px solid rgba(255,255,255,0.12);
     }
+    .shots a { display: block; text-decoration: none; color: inherit; }
+    .shots a:hover img { border-color: rgba(255,255,255,0.45); }
+    .shots .frame { position: relative; display: block; }
+    /* Video tiles are a poster plus a play badge, linking out — no embeds, so
+       the page stays a couple of static files with no third-party scripts. */
+    .shots .play-badge {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+    }
+    .shots .play-badge span {
+      display: grid;
+      place-items: center;
+      width: 2.6rem; height: 2.6rem;
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: 50%;
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+    }
+    .shots .play-badge svg { width: 1rem; height: 1rem; fill: currentColor; display: block; }
     .shots figcaption {
       margin-top: 0.4rem;
       font-family: 'Share Tech Mono', monospace;
@@ -408,7 +481,7 @@
       .tab-link { padding: 0.32rem 0.45rem; font-size: 0.56rem; letter-spacing: 0.1em; }
       .tab-arrow { width: 1.65rem; height: 1.65rem; }
       .tab-arrow svg { width: 0.75rem; height: 0.75rem; }
-      .tab { padding-top: 0.7rem; padding-bottom: 0.4rem; }
+      .page { padding-top: 0.7rem; padding-bottom: 0.4rem; }
       .gig { padding: 0.5rem 0; }
       .note { margin-bottom: 0.5rem; }
       #site-footer { padding-bottom: 0.7rem; }
@@ -418,7 +491,7 @@
     /* Short viewport: compress the listings so they still fit inside the
        second screenful instead of pushing the page past two screens. */
     @media (max-height: 620px) {
-      .tab { padding-top: 0.8rem; padding-bottom: 0.35rem; }
+      .page { padding-top: 0.8rem; padding-bottom: 0.35rem; }
       #tabbar { padding-top: 0.5rem; }
       .tab h2 { margin-bottom: 0.25rem; }
       .note { margin-bottom: 0.5rem; font-size: 0.62rem; line-height: 1.45; }
@@ -435,7 +508,7 @@
       .tab-link { padding: 0.3rem 0.55rem; font-size: 0.58rem; letter-spacing: 0.14em; }
       .tab-arrow { width: 1.6rem; height: 1.6rem; }
       .tab-arrow svg { width: 0.75rem; height: 0.75rem; }
-      .tab { padding-top: 0.55rem; padding-bottom: 0.25rem; }
+      .page { padding-top: 0.55rem; padding-bottom: 0.25rem; }
       .gig { padding: 0.35rem 0; }
       .note { margin-bottom: 0.35rem; }
       #site-footer { padding-bottom: 0.6rem; }
@@ -450,12 +523,14 @@
       .tab .note { padding-right: 3.6rem; }
     }
 
-    @supports (height: 100svh) {
-      #hero { height: 100svh; }
-      #screen-two { min-height: 100svh; }
-      /* svh is the smallest viewport height, so the cap stays honest while a
-         mobile URL bar is on screen. */
-      #logo { --logo-cap: calc(100svh - 14rem); }
+    /* dvh, not svh: the two screenfuls must match the viewport as it actually
+       is. svh excludes a mobile URL bar, which left the second screenful
+       shorter than the window whenever the bar was hidden — the hero then
+       showed above the tab bar at the end of the scroll. */
+    @supports (height: 100dvh) {
+      #hero { height: 100dvh; }
+      #screen-two { min-height: 100dvh; }
+      #logo { --logo-cap: calc(100dvh - 14rem); }
     }
   </style>
 </head>
@@ -489,28 +564,42 @@
         <button class="tab-arrow" id="tab-next" type="button" aria-label="Next section">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7z"/></svg>
         </button>
+        <span id="page-nav" hidden>
+          <button class="tab-arrow" id="page-up" type="button" aria-label="Previous page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7z"/></svg>
+          </button>
+          <span id="page-count" aria-live="polite"></span>
+          <button class="tab-arrow" id="page-down" type="button" aria-label="Next page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7z"/></svg>
+          </button>
+        </span>
       </div>
     </nav>
 
     <div id="tabs">
       <section class="tab" id="tab-story" aria-labelledby="story-title">
-        <div class="wrap">
-          <!-- STORY:START — generated from story.yaml by scripts/build-content.py.
-               Edit the YAML and re-run; do not hand-edit this block. -->
+        <!-- STORY:START — generated from story.yaml by scripts/build-content.py.
+             Edit the YAML and re-run; do not hand-edit this block. -->
+        <div class="page"><div class="wrap">
           <h2 id="story-title">The Story</h2>
-          <div class="story">
-            <p>Placeholder text — replace with the band&#x27;s story.</p>
-            <p>Two or three short paragraphs work best here. Keep it to a screenful so the panel does not need scrolling.</p>
+          <div class="prose">
+            <p>Placeholder text — replace with the band&#x27;s story. This paragraph shows <strong>bold</strong>, <em>italic</em>, <code>code</code> and a <a href="https://www.instagram.com/spellbinding.band/">link</a>.</p>
+            <p>A second paragraph on the same screenful.</p>
           </div>
-          <!-- STORY:END -->
-        </div>
+        </div></div>
+        <div class="page"><div class="wrap">
+          <div class="prose">
+            <p>This is the second screenful of the story.</p>
+          </div>
+        </div></div>
+        <!-- STORY:END -->
       </section>
 
-      <section class="tab" id="tab-live" aria-labelledby="calendar-title">
-        <div class="wrap">
-          <h2 id="calendar-title">Spellbinding.band LIVE</h2>
-          <!-- GIGS:START — generated from calendar.yaml by scripts/build-content.py.
-               Edit the YAML and re-run; do not hand-edit this block. -->
+      <section class="tab" id="tab-live" aria-labelledby="live-title">
+        <!-- GIGS:START — generated from calendar.yaml by scripts/build-content.py.
+             Edit the YAML and re-run; do not hand-edit this block. -->
+        <div class="page"><div class="wrap">
+          <h2 id="live-title">Spellbinding.band LIVE</h2>
           <p class="note">Placeholder listings — not real dates yet. Stay tuned.</p>
           <ul class="gigs">
             <li class="gig">
@@ -538,18 +627,18 @@
               <span class="status">Placeholder</span>
             </li>
           </ul>
-          <!-- GIGS:END -->
-        </div>
+        </div></div>
+        <!-- GIGS:END -->
       </section>
 
       <section class="tab" id="tab-gallery" aria-labelledby="gallery-title">
-        <div class="wrap">
-          <!-- GALLERY:START — generated from gallery.yaml by scripts/build-content.py.
-               Edit the YAML and re-run; do not hand-edit this block. -->
+        <!-- GALLERY:START — generated from gallery.yaml by scripts/build-content.py.
+             Edit the YAML and re-run; do not hand-edit this block. -->
+        <div class="page"><div class="wrap">
           <h2 id="gallery-title">Gallery</h2>
           <p class="note">Photos coming soon.</p>
-          <!-- GALLERY:END -->
-        </div>
+        </div></div>
+        <!-- GALLERY:END -->
       </section>
     </div>
 
@@ -769,7 +858,11 @@
       activeTab = Math.max(0, Math.min(tabEls.length - 1, i));
       stripEl.scrollTo({ left: activeTab * stripEl.clientWidth,
                          behavior: smooth === false ? 'auto' : 'smooth' });
+      // Arriving at a tab should show its first page, not wherever it was left.
+      const tab = tabEls[activeTab];
+      if (tab) tab.scrollTop = 0;
       paintTabs();
+      paintPages();
     }
 
     linkEls.forEach((l, i) => l.addEventListener('click', () => goToTab(i)));
@@ -782,8 +875,58 @@
       stripTimer = setTimeout(() => {
         const i = nearestTab();
         if (i !== activeTab) { activeTab = i; paintTabs(); }
+        paintPages();
       }, 90);
     }, { passive: true });
+
+    // ── Pages within a tab ───────────────────────────────────────────────────
+    // A tab whose content runs past one screenful is split into pages that snap
+    // vertically. The counter and its two arrows appear only when there is more
+    // than one, and address whichever tab is currently showing.
+    const pageNav = document.getElementById('page-nav');
+    const pageCount = document.getElementById('page-count');
+    const pageUp = document.getElementById('page-up');
+    const pageDown = document.getElementById('page-down');
+
+    function currentTabEl() { return tabEls[activeTab]; }
+
+    function pagesOf(tab) { return Array.from(tab.querySelectorAll('.page')); }
+
+    function pageIndex(tab) {
+      const h = tab.clientHeight || 1;
+      return Math.max(0, Math.min(pagesOf(tab).length - 1, Math.round(tab.scrollTop / h)));
+    }
+
+    function paintPages() {
+      const tab = currentTabEl();
+      if (!tab) return;
+      const n = pagesOf(tab).length;
+      if (n < 2) { pageNav.hidden = true; return; }
+      const i = pageIndex(tab);
+      pageNav.hidden = false;
+      pageCount.textContent = (i + 1) + '/' + n;
+      pageUp.disabled = i === 0;
+      pageDown.disabled = i === n - 1;
+    }
+
+    function goToPage(delta) {
+      const tab = currentTabEl();
+      if (!tab) return;
+      const i = Math.max(0, Math.min(pagesOf(tab).length - 1, pageIndex(tab) + delta));
+      tab.scrollTo({ top: i * tab.clientHeight, behavior: 'smooth' });
+      setTimeout(paintPages, 320);
+    }
+
+    pageUp.addEventListener('click', () => goToPage(-1));
+    pageDown.addEventListener('click', () => goToPage(1));
+
+    tabEls.forEach(tab => {
+      let t = 0;
+      tab.addEventListener('scroll', () => {
+        clearTimeout(t);
+        t = setTimeout(paintPages, 90);
+      }, { passive: true });
+    });
 
     // Left/right arrow keys move between panels while the bar has focus.
     document.getElementById('tabbar').addEventListener('keydown', e => {
@@ -793,7 +936,11 @@
 
     // Open on Live, and keep that panel centred when the viewport resizes.
     goToTab(activeTab, false);
-    window.addEventListener('resize', () => goToTab(activeTab, false), { passive: true });
+    paintPages();
+    window.addEventListener('resize', () => {
+      goToTab(activeTab, false);
+      paintPages();
+    }, { passive: true });
 
     // ── Starting playback ────────────────────────────────────────────────────
     // The button is the only control. Nothing else on the page starts or stops
