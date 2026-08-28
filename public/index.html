@@ -112,14 +112,6 @@
       height: 100vh;
       z-index: 3;
     }
-    @supports (height: 100svh) {
-      #hero { height: 100svh; }
-      #calendar { margin-top: 30svh; margin-bottom: 20svh; }
-      /* svh is the smallest viewport height, so the cap stays honest while a
-         mobile URL bar is on screen. */
-      #logo { --logo-cap: calc(100svh - 13rem); }
-    }
-
 
     #scroll-cue {
       position: absolute;
@@ -147,22 +139,23 @@
       #scroll-cue span { animation: none; opacity: 0.65; }
     }
 
-    /* On a short viewport pull the cue closer to the bottom edge. */
-    @media (max-height: 640px) {
-      #scroll-cue { bottom: 2.25rem; }
-    }
 
     /* ── Calendar: rises out of the animation, then goes opaque ──────────── */
-    #calendar {
+    /* The page is two screenfuls: the hero, then this. One viewport tall, with
+       the heading at its top and the footer pinned to its bottom, so scrolling
+       to the end always lands the heading at the top of the screen. min-height
+       rather than height, so unusually tall content grows instead of clipping. */
+    #screen-two {
       position: relative;
       z-index: 4;
-      /* Extra scroll runway, half a viewport in total, split 30/20 between
-         above the listings and between the listings and the footer. Keeping
-         the two adding up to 50vh preserves the total scroll length, and the
-         footer still lands at the bottom of the final screen. */
-      margin-top: 30vh;
-      margin-bottom: 20vh;
-      padding: clamp(1.75rem, 6vh, 3.5rem) clamp(1.25rem, 6vw, 4rem) clamp(1.5rem, 4vh, 2.5rem);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #calendar {
+      position: relative;
+      padding: clamp(1.25rem, 4vh, 2.25rem) clamp(1.25rem, 6vw, 4rem) clamp(1rem, 3vh, 2rem);
       /* deliberately no background: the animation stays visible behind the
          listings and is never dimmed. Legibility comes from text-shadow. */
     }
@@ -263,7 +256,7 @@
     /* ── Footer ──────────────────────────────────────────────────────────── */
     #site-footer {
       position: relative;
-      z-index: 4;
+      margin-top: auto;            /* bottom of the second screenful */
       padding: 0 clamp(1.25rem, 6vw, 4rem) 1.75rem;
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(0.6rem, 1.4vw, 0.78rem);
@@ -285,6 +278,44 @@
     }
     #site-footer a:hover { color: rgba(255,255,255,0.9); }
     #site-footer .copy { color: rgba(150,150,150,0.4); }
+
+    /* ── Overrides ────────────────────────────────────────────────────────────
+       Everything below must stay last: these rules have the same specificity as
+       the base rules they adjust, so placed earlier the base declaration wins
+       and they silently do nothing. */
+    /* On a short viewport pull the cue closer to the bottom edge. */
+    @media (max-height: 640px) {
+      #scroll-cue { bottom: 2.25rem; }
+    }
+
+    /* Short viewport: compress the listings so they still fit inside the
+       second screenful instead of pushing the page past two screens. */
+    @media (max-height: 620px) {
+      #calendar { padding-top: 0.8rem; padding-bottom: 0.35rem; }
+      #calendar h2 { margin-bottom: 0.25rem; }
+      .note { margin-bottom: 0.5rem; font-size: 0.62rem; line-height: 1.45; }
+      .gig { padding: 0.45rem 0; }
+      .gig .at { margin-top: 0.08rem; }
+      .city { margin-top: 0.08rem; }
+      #site-footer { padding-bottom: 0.8rem; }
+      #site-footer .wrap { padding-top: 0.7rem; }
+    }
+
+    /* The play button is fixed at the top-right, and the second screenful puts
+       the heading and note right underneath it. Keep them clear on narrow
+       screens, where the note wraps wide enough to run behind it. */
+    @media (max-width: 34rem) {
+      #calendar h2,
+      #calendar .note { padding-right: 3.6rem; }
+    }
+
+    @supports (height: 100svh) {
+      #hero { height: 100svh; }
+      #screen-two { min-height: 100svh; }
+      /* svh is the smallest viewport height, so the cap stays honest while a
+         mobile URL bar is on screen. */
+      #logo { --logo-cap: calc(100svh - 13rem); }
+    }
   </style>
 </head>
 <body>
@@ -301,7 +332,8 @@
     <div id="scroll-cue" aria-hidden="true"><span>Scroll</span></div>
   </section>
 
-  <main id="calendar" aria-labelledby="calendar-title">
+  <div id="screen-two">
+    <main id="calendar" aria-labelledby="calendar-title">
     <div class="wrap">
       <h2 id="calendar-title">Spellbinding.band LIVE</h2>
 
@@ -335,16 +367,17 @@
         </li>
       </ul>
       <!-- GIGS:END -->
-    </div>
-  </main>
+      </div>
+    </main>
 
-  <footer id="site-footer">
-    <div class="wrap">
-      <a href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
-      <a href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
-      <p class="copy">&copy; 2026 Spellbinding</p>
-    </div>
-  </footer>
+    <footer id="site-footer">
+      <div class="wrap">
+        <a href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
+        <a href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
+        <p class="copy">&copy; 2026 Spellbinding</p>
+      </div>
+    </footer>
+  </div>
 
   <script>
   // Copyright © 2026 Spellbinding. All rights reserved.
@@ -455,13 +488,16 @@
       syncButton();
     }
 
+    let lastVol = -1;
+
     function applyVolume() {
       if (!ac || !gainNode) return;
-      const maxS = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      const t = Math.max(0, Math.min(1, pageOff / maxS));
+      const t = Math.max(0, Math.min(1, pageOff / maxScroll));
       const target = VOL_MIN + (VOL_MAX - VOL_MIN) * t;
+      if (Math.abs(target - lastVol) < 0.004) return;   // called every frame
+      lastVol = target;
       // Ramp, so unlocking partway down the page fades in instead of jumping.
-      gainNode.gain.setTargetAtTime(target, ac.currentTime, 0.25);
+      gainNode.gain.setTargetAtTime(target, ac.currentTime, 0.12);
     }
 
     // ── Scroll position ──────────────────────────────────────────────────────
@@ -470,24 +506,34 @@
     const cueEl = document.getElementById('scroll-cue');
     let pageOff = 0, fade = 1, lastBright = -1;
 
+    // Cached: reading scrollHeight forces layout, and this is read every frame.
+    let maxScroll = 1;
+    function measure() {
+      maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    }
+
     function readScroll() {
       pageOff = window.scrollY || window.pageYOffset || 0;
       const span = Math.max(1, window.innerHeight * 0.5);
       fade = Math.max(0, Math.min(1, 1 - pageOff / span));
     }
 
-    function onScroll() {
+    function onResize() {
+      resize();
+      measure();
       readScroll();
       applyVolume();
     }
-    function onResize() {
-      resize();
-      onScroll();
-    }
 
+    measure();
     readScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize, { passive: true });
+    window.addEventListener('orientationchange', onResize, { passive: true });
+    window.addEventListener('load', measure);
+    // Deliberately no 'scroll' listener: mobile browsers coalesce or withhold
+    // scroll events during momentum scrolling, which left the volume and the
+    // logo fade stuck mid-gesture. The animation loop reads the position every
+    // frame instead, so both always track.
 
     // ── Starting playback ────────────────────────────────────────────────────
     // The button is the only control. Nothing else on the page starts or stops
@@ -860,6 +906,8 @@
       const dt = Math.min(t - last, 0.05);
       last = t;
 
+      readScroll();
+      applyVolume();
       readAudio();
       mt     += 0.008 + sBass * 0.04 + kick * 0.02;
       scroll += 0.0003 + sBass * 0.0002; // slow left drift, wraps seamlessly
