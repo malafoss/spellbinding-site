@@ -96,12 +96,42 @@
     }
     #instagram:hover { color: rgba(255,255,255,0.9); }
 
+    /* ── Play/pause: fixed top-right, above everything, never fades ──────── */
+    #play-toggle {
+      position: fixed;
+      top: 1.5rem; right: 1.75rem;
+      z-index: 6;
+      width: 2.6rem; height: 2.6rem;
+      display: grid; place-items: center;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 50%;
+      color: rgba(232,232,232,0.75);
+      cursor: pointer;
+      transition: color 0.25s, border-color 0.25s, background 0.25s;
+    }
+    #play-toggle:hover {
+      color: #fff;
+      border-color: rgba(255,255,255,0.42);
+      background: rgba(0,0,0,0.6);
+    }
+    #play-toggle:focus-visible {
+      outline: 2px solid rgba(196,150,240,0.85);
+      outline-offset: 3px;
+    }
+    #play-toggle svg { width: 1.05rem; height: 1.05rem; fill: currentColor; display: block; }
+    #play-toggle .i-pause { display: none; }
+    #play-toggle[data-playing="true"] .i-play  { display: none; }
+    #play-toggle[data-playing="true"] .i-pause { display: block; }
+    @media (max-width: 34rem) {
+      #play-toggle { top: 1.1rem; right: 1.1rem; width: 2.4rem; height: 2.4rem; }
+    }
+
     /* ── Hero: full viewport, click target for audio ─────────────────────── */
     #hero {
       position: relative;
       height: 100vh;
       z-index: 3;
-      cursor: pointer;
     }
     @supports (height: 100svh) {
       #hero { height: 100svh; }
@@ -152,12 +182,11 @@
 
     #calendar h2 {
       font-family: 'Share Tech Mono', monospace;
-      font-size: clamp(1.1rem, 3.4vw, 1.5rem);
+      font-size: clamp(1rem, 3.2vw, 1.4rem);
       font-weight: 400;
-      letter-spacing: 0.34em;
-      text-transform: uppercase;
+      letter-spacing: 0.12em;
       color: #f2f2f2;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
     }
 
     .note {
@@ -254,6 +283,11 @@
   <canvas id="grain"></canvas>
   <img id="logo" src="logo.png" alt="Spellbinding" width="1254" height="1254">
 
+  <button id="play-toggle" type="button" aria-label="Play music" aria-pressed="false">
+    <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+    <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.4v14H7zm6.6 0H17v14h-3.4z"/></svg>
+  </button>
+
   <section id="hero" aria-label="Spellbinding">
     <a id="instagram" href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
     <a id="contact" href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
@@ -262,7 +296,7 @@
 
   <main id="calendar" aria-labelledby="calendar-title">
     <div class="wrap">
-      <h2 id="calendar-title">Live</h2>
+      <h2 id="calendar-title">Spellbinding.band LIVE</h2>
 
       <!-- PLACEHOLDER LISTINGS: replace the three <li> below with real dates,
            and delete the <p class="note"> above them, before publishing.
@@ -314,6 +348,10 @@
     </div>
   </footer>
 
+  <!-- Sized by script: lets the footer links scroll up to the top of the
+       viewport, which is the furthest the page scrolls. -->
+  <div id="scroll-spacer" aria-hidden="true"></div>
+
   <script>
   // Copyright © 2026 Spellbinding. All rights reserved.
   (function () {
@@ -332,7 +370,6 @@
       H = canvas.height = grainEl.height = window.innerHeight;
     }
     resize();
-    window.addEventListener('resize', resize, { passive: true });
 
     // ── Film grain (small offscreen, tiled up) ───────────────────────────────
     const GW = 384, GH = 256;
@@ -356,7 +393,7 @@
     }
 
     // ── Audio ────────────────────────────────────────────────────────────────
-    let ac = null, analyser = null, freqData = null, started = false;
+    let ac = null, analyser = null, freqData = null, gainNode = null;
     let sBass = 0, sFlux = 0, punch = 0;
     let kick = 0, snare = 0, hat = 0, keys = 0, pitch = 0;
     let prevRawKick = 0, prevRawSnare = 0;
@@ -366,30 +403,69 @@
     let bassMin = 1.0, bassMax = 0.0;
     let audioEl = null;
 
-    async function start() {
-      if (started) return;
-      started = true;
-      try {
-        // play() must fire before new AudioContext() — on Android Chrome,
-        // constructing AudioContext consumes the user gesture token first.
-        audioEl = new Audio('spellcasting.m4a');
-        audioEl.loop = true;
-        const playPromise = audioEl.play();
+    function buildGraph() {
+      if (ac) return;
+      audioEl = new Audio('spellcasting.m4a');
+      audioEl.loop = true;
+      // Deliberately no play() here: createMediaElementSource() below
+      // interrupts a play already in flight and it rejects with AbortError,
+      // which silently ate the first click. tryStart() plays once the graph
+      // is fully wired instead.
 
-        ac = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = ac.createAnalyser();
-        analyser.fftSize = 2048;
-        analyser.smoothingTimeConstant = 0.75;
-        freqData = new Uint8Array(analyser.frequencyBinCount);
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = ac.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.75;
+      freqData = new Uint8Array(analyser.frequencyBinCount);
 
-        const src = ac.createMediaElementSource(audioEl);
-        src.connect(analyser);
-        analyser.connect(ac.destination);
+      gainNode = ac.createGain();
+      gainNode.gain.value = 0;              // scroll position owns the volume
 
-        await Promise.all([ac.resume(), playPromise]);
-      } catch (e) {
-        console.error('Audio error:', e.message);
-      }
+      const src = ac.createMediaElementSource(audioEl);
+      // The analyser sits BEFORE the gain, so the visuals react at full
+      // strength even while the volume is still scrolled down to silence.
+      src.connect(analyser);
+      analyser.connect(gainNode);
+      gainNode.connect(ac.destination);
+
+      audioEl.addEventListener('play',   syncButton);
+      audioEl.addEventListener('pause',  syncButton);
+      audioEl.addEventListener('playing', syncButton);
+      if (ac.addEventListener) ac.addEventListener('statechange', syncButton);
+    }
+
+    function audioReady() {
+      return ac && ac.state === 'running' && audioEl && !audioEl.paused;
+    }
+
+    const btnEl = document.getElementById('play-toggle');
+    let userPaused = false;
+
+    function syncButton() {
+      const playing = audioReady();
+      btnEl.dataset.playing = playing ? 'true' : 'false';
+      btnEl.setAttribute('aria-label', playing ? 'Pause music' : 'Play music');
+      btnEl.setAttribute('aria-pressed', playing ? 'true' : 'false');
+    }
+
+    // Nothing here is awaited on purpose: ac.resume() can stay pending forever
+    // when there has been no user activation, which would wedge any retry.
+    function tryStart() {
+      if (userPaused) return;          // do not undo an explicit pause
+      buildGraph();
+      if (audioReady()) return;
+      audioEl.play().catch(() => {});
+      if (ac.state !== 'running') ac.resume().catch(() => {});
+      applyVolume();
+      syncButton();
+    }
+
+    function applyVolume() {
+      if (!ac || !gainNode) return;
+      const maxS = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      const target = Math.max(0, Math.min(1, pageOff / maxS));
+      // Ramp, so unlocking partway down the page fades in instead of blasting.
+      gainNode.gain.setTargetAtTime(target, ac.currentTime, 0.25);
     }
 
     // ── Scroll position ──────────────────────────────────────────────────────
@@ -403,39 +479,68 @@
       const span = Math.max(1, window.innerHeight * 0.5);
       fade = Math.max(0, Math.min(1, 1 - pageOff / span));
     }
-    readScroll();
-    window.addEventListener('scroll', readScroll, { passive: true });
-    window.addEventListener('resize', readScroll, { passive: true });
+    // ── Scroll extent ────────────────────────────────────────────────────────
+    // Pad the page so the last scroll position puts the footer links at the
+    // very top of the viewport — that is as far as the page may scroll.
+    const footerEl = document.getElementById('site-footer');
+    const spacerEl = document.getElementById('scroll-spacer');
 
-    let lastInteraction = 0;
-    function handleInteraction(e) {
-      // links, and anything in the scrolled content, are not play/pause targets
-      if (e.target.closest && e.target.closest('a, #calendar, #site-footer')) return;
-      const now = Date.now();
-      if (now - lastInteraction < 500) return;
-      lastInteraction = now;
-      if (!started) {
-        start();
-      } else if (audioEl) {
-        audioEl.paused ? audioEl.play() : audioEl.pause();
-      }
+    function sizeSpacer() {
+      spacerEl.style.height = '0px';
+      const footTop = footerEl.getBoundingClientRect().top + window.scrollY;
+      const docH    = document.documentElement.scrollHeight;
+      const need    = footTop + window.innerHeight - docH;
+      spacerEl.style.height = Math.max(0, Math.round(need)) + 'px';
     }
 
-    document.addEventListener('click', handleInteraction);
+    function onScroll() {
+      readScroll();
+      applyVolume();
+    }
+    function onResize() {
+      resize();
+      sizeSpacer();
+      onScroll();
+    }
 
-    // A scroll gesture also ends in touchend — only treat a still finger as a tap.
-    let tX = 0, tY = 0, touchMoved = false;
-    document.addEventListener('touchstart', e => {
-      const t = e.changedTouches[0];
-      tX = t.clientX; tY = t.clientY; touchMoved = false;
-    }, { passive: true });
-    document.addEventListener('touchmove', e => {
-      const t = e.changedTouches[0];
-      if (Math.abs(t.clientX - tX) > 10 || Math.abs(t.clientY - tY) > 10) touchMoved = true;
-    }, { passive: true });
-    document.addEventListener('touchend', e => {
-      if (!touchMoved) handleInteraction(e);
+    readScroll();
+    sizeSpacer();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
+    window.addEventListener('load', sizeSpacer);
+
+    // ── Starting playback ────────────────────────────────────────────────────
+    // No click to start: the volume follows the scroll position, and playback
+    // begins as soon as the browser allows it. Browsers require a user gesture
+    // to start audio, and a wheel/trackpad scroll does NOT count as one, so
+    // every plausible gesture is treated as an unlock attempt. Touch scrolling,
+    // keyboard scrolling and scrollbar dragging all do grant activation, so on
+    // those the music genuinely starts with the scroll.
+    // Events on the button itself are excluded: pointerdown fires before click,
+    // so an unlock here would start playback and the click handler would then
+    // read that as "already playing" and immediately pause it again.
+    function unlock(e) {
+      const t = e && e.target;
+      if (t && t.closest && t.closest('#play-toggle')) return;
+      tryStart();
+    }
+    ['scroll','wheel','pointerdown','keydown','touchstart','touchend','click']
+      .forEach(t => window.addEventListener(t, unlock, { passive: true }));
+
+    // The button is the reliable route: a click always counts as activation,
+    // which a wheel/trackpad scroll never does.
+    btnEl.addEventListener('click', () => {
+      buildGraph();
+      if (audioReady()) {
+        userPaused = true;
+        audioEl.pause();
+      } else {
+        userPaused = false;
+        tryStart();
+      }
+      syncButton();
     });
+    syncButton();
 
     function readAudio() {
       if (!analyser) return;
