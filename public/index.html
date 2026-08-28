@@ -64,13 +64,16 @@
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 5;
-      width: clamp(11rem, 44vmin, 26rem);
+      /* The logo is centred, so it grows downwards into the scroll cue on a
+         short viewport. Capped by the height left above the cue, and with no
+         rem floor above 4rem — an 11rem floor would win over the cap on a
+         short screen and put the logo back on top of the cue. */
+      --logo-cap: calc(100vh - 13rem);
+      width: max(4rem, min(44vmin, 26rem, var(--logo-cap)));
       height: auto;
       pointer-events: none;
       user-select: none;
     }
-
-
 
     /* ── Play/pause: fixed top-right, above everything, never fades ──────── */
     #play-toggle {
@@ -112,7 +115,11 @@
     @supports (height: 100svh) {
       #hero { height: 100svh; }
       #calendar { margin-top: 30svh; margin-bottom: 20svh; }
+      /* svh is the smallest viewport height, so the cap stays honest while a
+         mobile URL bar is on screen. */
+      #logo { --logo-cap: calc(100svh - 13rem); }
     }
+
 
     #scroll-cue {
       position: absolute;
@@ -138,6 +145,11 @@
     }
     @media (prefers-reduced-motion: reduce) {
       #scroll-cue span { animation: none; opacity: 0.65; }
+    }
+
+    /* On a short viewport pull the cue closer to the bottom edge. */
+    @media (max-height: 640px) {
+      #scroll-cue { bottom: 2.25rem; }
     }
 
     /* ── Calendar: rises out of the animation, then goes opaque ──────────── */
