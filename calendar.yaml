@@ -1,0 +1,43 @@
+# Spellbinding live dates
+# ---------------------------------------------------------------------------
+# Edit this file, then regenerate the page:
+#
+#     uv run scripts/build-calendar.py
+#
+# That rewrites everything between the GIGS:START and GIGS:END markers in
+# public/index.html. Do not hand-edit the page between those markers — the next
+# run overwrites it.
+#
+# Events are sorted by date automatically, so you can add them in any order.
+# The weekday ("Sat") is derived from the date; you never type it yourself.
+# ---------------------------------------------------------------------------
+
+# A line shown above the list. Set to "" to remove it entirely.
+note: "Placeholder listings — not real dates. Replace before publishing."
+
+# An empty list (events: []) renders the "no dates announced yet" state,
+# which is the safe thing to publish when nothing is confirmed.
+events:
+  - date:   2026-10-03          # required, YYYY-MM-DD
+    venue:  Example Venue       # required
+    city:   City                # required
+    status: Placeholder         # optional, right-hand column; omit for none
+    # url:  https://…           # optional, turns the venue into a link
+
+  - date:   2026-10-17
+    venue:  Example Venue
+    city:   City
+    status: Placeholder
+
+  - date:   2026-11-07
+    venue:  Example Venue
+    city:   City
+    status: Placeholder
+
+# Real entries look like this:
+#
+#   - date:   2026-11-21
+#     venue:  Tavastia
+#     city:   Helsinki
+#     status: Tickets
+#     url:    https://tavastiaklubi.fi/

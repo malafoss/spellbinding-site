@@ -141,7 +141,7 @@
     #calendar {
       position: relative;
       z-index: 4;
-      padding: clamp(2.5rem, 12vh, 8rem) clamp(1.25rem, 6vw, 4rem) clamp(3rem, 8vh, 5rem);
+      padding: clamp(1.75rem, 6vh, 3.5rem) clamp(1.25rem, 6vw, 4rem) clamp(1.5rem, 4vh, 2.5rem);
       /* deliberately no background: the animation stays visible behind the
          listings and is never dimmed. Legibility comes from text-shadow. */
     }
@@ -168,7 +168,7 @@
       letter-spacing: 0.08em;
       line-height: 1.7;
       color: rgba(190,190,190,0.5);
-      margin-bottom: 2.4rem;
+      margin-bottom: 1.5rem;
     }
 
     .gigs { list-style: none; }
@@ -178,7 +178,7 @@
       grid-template-columns: 6.5rem 1fr auto;
       gap: 0.4rem 1.75rem;
       align-items: baseline;
-      padding: 1.25rem 0;
+      padding: 1rem 0;
       border-top: 1px solid rgba(255,255,255,0.16);
       box-shadow: 0 -1px 0 rgba(0,0,0,0.55);
     }
@@ -200,6 +200,14 @@
       letter-spacing: 0.04em;
       color: #f0f0f0;
     }
+    .venue a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.28);
+      transition: border-color 0.25s;
+    }
+    .venue a:hover { border-color: rgba(255,255,255,0.8); }
+
     .city {
       display: block;
       margin-top: 0.2rem;
@@ -228,7 +236,7 @@
     #site-footer {
       position: relative;
       z-index: 4;
-      padding: 0 clamp(1.25rem, 6vw, 4rem) 2.5rem;
+      padding: 0 clamp(1.25rem, 6vw, 4rem) 1.75rem;
       font-family: 'Share Tech Mono', monospace;
       font-size: clamp(0.6rem, 1.4vw, 0.78rem);
       letter-spacing: 0.1em;
@@ -239,7 +247,7 @@
       gap: 0.75rem 2rem;
       align-items: baseline;
       justify-content: space-between;
-      padding-top: 1.75rem;
+      padding-top: 1.4rem;
       border-top: 1px solid rgba(255,255,255,0.14);
     }
     #site-footer a {
@@ -269,13 +277,9 @@
     <div class="wrap">
       <h2 id="calendar-title">Spellbinding.band LIVE</h2>
 
-      <!-- PLACEHOLDER LISTINGS: replace the three <li> below with real dates,
-           and delete the <p class="note"> above them, before publishing.
-           Keep the datetime attribute in ISO form (YYYY-MM-DD). -->
-      <p class="note">
-        Placeholder listings &mdash; not real dates. Replace before publishing.
-      </p>
-
+      <!-- GIGS:START — generated from calendar.yaml by scripts/build-calendar.py.
+           Edit the YAML and re-run; do not hand-edit this block. -->
+      <p class="note">Placeholder listings — not real dates. Replace before publishing.</p>
       <ul class="gigs">
         <li class="gig">
           <time datetime="2026-10-03"><span class="dow">Sat</span>03 Oct 2026</time>
@@ -302,12 +306,7 @@
           <span class="status">Placeholder</span>
         </li>
       </ul>
-
-      <!-- When there are no dates, drop the <ul> above and use this instead:
-      <p class="note">No dates announced yet. Follow
-        <a href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
-        for announcements.</p>
-      -->
+      <!-- GIGS:END -->
     </div>
   </main>
 
@@ -392,11 +391,11 @@
       gainNode.gain.value = VOL_MIN;        // scroll position owns the volume
 
       const src = ac.createMediaElementSource(audioEl);
-      // The analyser sits BEFORE the gain, so the visuals react at full
-      // strength even while the volume is still scrolled down to silence.
-      src.connect(analyser);
-      analyser.connect(gainNode);
-      gainNode.connect(ac.destination);
+      // The analyser sits AFTER the gain, so it measures the scroll-scaled
+      // signal and the animation calms down or builds up with the volume.
+      src.connect(gainNode);
+      gainNode.connect(analyser);
+      analyser.connect(ac.destination);
 
       audioEl.addEventListener('play',   syncButton);
       audioEl.addEventListener('pause',  syncButton);
@@ -450,24 +449,6 @@
       const span = Math.max(1, window.innerHeight * 0.5);
       fade = Math.max(0, Math.min(1, 1 - pageOff / span));
     }
-    // ── Scroll extent ────────────────────────────────────────────────────────
-    // Scrolling stops with the "Spellbinding.band LIVE" heading at the top of
-    // the viewport. Make the distance from the heading to the bottom of the
-    // footer exactly one viewport: the footer is the last element, so the
-    // document ends there and that becomes the last scroll position, with the
-    // footer links sitting at the bottom of that final screen.
-    const footerEl  = document.getElementById('site-footer');
-    const headingEl = document.getElementById('calendar-title');
-
-    function sizeLayout() {
-      footerEl.style.marginTop = '0px';
-      const headTop = headingEl.getBoundingClientRect().top + window.scrollY;
-      const footBot = footerEl.getBoundingClientRect().bottom + window.scrollY;
-      // If the listings ever grow past one viewport this clamps to 0, and the
-      // page simply scrolls further rather than clipping them.
-      const gap = window.innerHeight - (footBot - headTop);
-      footerEl.style.marginTop = Math.max(0, Math.round(gap)) + 'px';
-    }
 
     function onScroll() {
       readScroll();
@@ -475,15 +456,12 @@
     }
     function onResize() {
       resize();
-      sizeLayout();
       onScroll();
     }
 
     readScroll();
-    sizeLayout();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize, { passive: true });
-    window.addEventListener('load', sizeLayout);
 
     // ── Starting playback ────────────────────────────────────────────────────
     // No click to start: the volume follows the scroll position, and playback
