@@ -238,11 +238,19 @@
       min-width: 100%;
       scroll-snap-align: center;
       /* Long content becomes several screenfuls, snapped a page at a time. The
-         padding lives on .page, so min-height:100% is the whole tab. */
-      overflow-y: auto;
+         padding lives on .page, so min-height:100% is the whole tab.
+
+         Not scrollable until the page itself has reached the bottom: the tab is
+         already partly on screen while the window is still scrolling, and a
+         wheel or a swipe goes to the innermost scroller under the pointer — so
+         paging would start moving before the tab bar had reached the top. With
+         overflow hidden the gesture chains out to the window instead, and the
+         script adds .paging-on once there is nowhere left to scroll. */
+      overflow-y: hidden;
       scroll-snap-type: y mandatory;
       scrollbar-width: none;
     }
+    #tabs.paging-on .tab { overflow-y: auto; }
     .tab::-webkit-scrollbar { display: none; }
 
     .page {
@@ -918,10 +926,23 @@
       maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
     }
 
+    // Resolved on first use, not captured up here: readScroll() runs during
+    // init, before the tab section further down declares its own reference.
+    let pagingOn = false, tabsForPaging = null;
+
     function readScroll() {
       pageOff = window.scrollY || window.pageYOffset || 0;
       const span = Math.max(1, window.innerHeight * 0.5);
       fade = Math.max(0, Math.min(1, 1 - pageOff / span));
+
+      // Paging is only live once the page has nothing left to scroll, so the
+      // tab bar always reaches the top before the pages start moving.
+      const atBottom = pageOff >= maxScroll - 2;
+      if (atBottom !== pagingOn) {
+        pagingOn = atBottom;
+        if (!tabsForPaging) tabsForPaging = document.getElementById('tabs');
+        tabsForPaging.classList.toggle('paging-on', pagingOn);
+      }
     }
 
     function onResize() {
@@ -1010,6 +1031,12 @@
     const ARROW_DOWN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7z"/></svg>';
 
     function scrollToPage(tab, target) {
+      // Bring the window down first if it is not already there, so the tab bar
+      // reaches the top before the pages move — the same order the wheel takes.
+      if (pageOff < maxScroll - 2) {
+        window.scrollTo({ top: document.documentElement.scrollHeight,
+                          behavior: 'smooth' });
+      }
       // Rect maths rather than scrollIntoView, which would also scroll the
       // window; only the tab should move.
       const top = target.getBoundingClientRect().top
