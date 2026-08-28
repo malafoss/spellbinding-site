@@ -424,7 +424,6 @@
     }
 
     const btnEl = document.getElementById('play-toggle');
-    let userPaused = false;
 
     function syncButton() {
       const playing = audioReady();
@@ -436,7 +435,6 @@
     // Nothing here is awaited on purpose: ac.resume() can stay pending forever
     // when there has been no user activation, which would wedge any retry.
     function tryStart() {
-      if (userPaused) return;          // do not undo an explicit pause
       buildGraph();
       if (audioReady()) return;
       audioEl.play().catch(() => {});
@@ -480,32 +478,14 @@
     window.addEventListener('resize', onResize, { passive: true });
 
     // ── Starting playback ────────────────────────────────────────────────────
-    // No click to start: the volume follows the scroll position, and playback
-    // begins as soon as the browser allows it. Browsers require a user gesture
-    // to start audio, and a wheel/trackpad scroll does NOT count as one, so
-    // every plausible gesture is treated as an unlock attempt. Touch scrolling,
-    // keyboard scrolling and scrollbar dragging all do grant activation, so on
-    // those the music genuinely starts with the scroll.
-    // Events on the button itself are excluded: pointerdown fires before click,
-    // so an unlock here would start playback and the click handler would then
-    // read that as "already playing" and immediately pause it again.
-    function unlock(e) {
-      const t = e && e.target;
-      if (t && t.closest && t.closest('#play-toggle')) return;
-      tryStart();
-    }
-    ['scroll','wheel','pointerdown','keydown','touchstart','touchend','click']
-      .forEach(t => window.addEventListener(t, unlock, { passive: true }));
-
-    // The button is the reliable route: a click always counts as activation,
-    // which a wheel/trackpad scroll never does.
+    // The button is the only control. Nothing else on the page starts or stops
+    // the music: no page clicks, no scroll, no key presses. Scrolling still
+    // sets the volume, but only once playback has been started here.
     btnEl.addEventListener('click', () => {
       buildGraph();
       if (audioReady()) {
-        userPaused = true;
         audioEl.pause();
       } else {
-        userPaused = false;
         tryStart();
       }
       syncButton();
