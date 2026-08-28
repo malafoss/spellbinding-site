@@ -166,11 +166,15 @@
     /* ── Tab bar ─────────────────────────────────────────────────────────── */
     #tabbar {
       flex: 0 0 auto;
+      padding: clamp(0.75rem, 2.5vh, 1.4rem) clamp(1.25rem, 6vw, 4rem) 0;
+    }
+    #tabbar .wrap {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 0.35rem;
-      padding: clamp(0.75rem, 2.5vh, 1.4rem) clamp(0.5rem, 3vw, 2rem) 0;
+      /* room on the right for the fixed play button */
+      padding-right: 3.4rem;
     }
     #tabbar-labels { display: flex; gap: 0.15rem; }
 
@@ -183,7 +187,7 @@
       transition: color 0.25s, background 0.25s, border-color 0.25s;
     }
     .tab-link {
-      padding: 0.45rem 0.85rem;
+      padding: 0.45rem 0.7rem;
       font-size: clamp(0.62rem, 1.6vw, 0.78rem);
       letter-spacing: 0.18em;
       text-transform: uppercase;
@@ -299,7 +303,7 @@
 
     .gig {
       display: grid;
-      grid-template-columns: 7.5rem 1fr auto;
+      grid-template-columns: 11.5rem 1fr auto;
       gap: 0.4rem 1.75rem;
       align-items: baseline;
       padding: 1rem 0;
@@ -317,8 +321,7 @@
     }
     .gig .dow { color: rgba(180,180,180,0.55); margin-right: 0.5em; }
     .gig .at {
-      display: block;
-      margin-top: 0.25rem;
+      margin-left: 0.7em;
       font-size: 0.72rem;
       letter-spacing: 0.14em;
       color: rgba(190,150,220,0.72);
@@ -420,7 +423,6 @@
       .tab h2 { margin-bottom: 0.25rem; }
       .note { margin-bottom: 0.5rem; font-size: 0.62rem; line-height: 1.45; }
       .gig { padding: 0.45rem 0; }
-      .gig .at { margin-top: 0.08rem; }
       .city { margin-top: 0.08rem; }
       #site-footer { padding-bottom: 0.8rem; }
       #site-footer .wrap { padding-top: 0.7rem; }
@@ -475,17 +477,19 @@
 
   <div id="screen-two">
     <nav id="tabbar" aria-label="Sections">
-      <button class="tab-arrow" id="tab-prev" type="button" aria-label="Previous section">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7z"/></svg>
-      </button>
-      <div id="tabbar-labels">
-        <button class="tab-link" type="button" data-tab="story"   aria-current="false">Story</button>
-        <button class="tab-link" type="button" data-tab="live"    aria-current="true">Live</button>
-        <button class="tab-link" type="button" data-tab="gallery" aria-current="false">Gallery</button>
+      <div class="wrap">
+        <button class="tab-arrow" id="tab-prev" type="button" aria-label="Previous section">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7z"/></svg>
+        </button>
+        <div id="tabbar-labels">
+          <button class="tab-link" type="button" data-tab="story"   aria-current="false">Story</button>
+          <button class="tab-link" type="button" data-tab="live"    aria-current="true">Live</button>
+          <button class="tab-link" type="button" data-tab="gallery" aria-current="false">Gallery</button>
+        </div>
+        <button class="tab-arrow" id="tab-next" type="button" aria-label="Next section">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7z"/></svg>
+        </button>
       </div>
-      <button class="tab-arrow" id="tab-next" type="button" aria-label="Next section">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7z"/></svg>
-      </button>
     </nav>
 
     <div id="tabs">
