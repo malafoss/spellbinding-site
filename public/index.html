@@ -209,6 +209,11 @@
     .tab-arrow svg { width: 0.9rem; height: 0.9rem; fill: currentColor; display: block; }
     .tab-arrow:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
     .tab-arrow[disabled] { opacity: 0.25; cursor: default; }
+    /* A page arrow that cannot go anywhere is not shown at all. visibility
+       rather than display, so the counter does not jump sideways as it comes
+       and goes. The strip's own arrows stay dimmed instead of vanishing,
+       since they show how far the three panels run. */
+    #page-nav .tab-arrow[disabled] { visibility: hidden; }
     .tab-link:focus-visible, .tab-arrow:focus-visible {
       outline: 2px solid rgba(196,150,240,0.85);
       outline-offset: 2px;
@@ -442,6 +447,58 @@
       .status { margin-top: 0.35rem; }
     }
 
+    /* ── Lightbox ────────────────────────────────────────────────────────── */
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: clamp(1rem, 4vw, 3rem);
+      background: rgba(0,0,0,0.93);
+    }
+    /* An author display: grid outranks the UA's [hidden] { display: none }. */
+    #lightbox[hidden] { display: none; }
+
+    #lightbox figure {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.7rem;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    #lightbox img {
+      display: block;
+      max-width: 100%;
+      max-height: calc(100vh - 7rem);
+      width: auto; height: auto;
+      object-fit: contain;
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+    #lightbox figcaption {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: rgba(210,210,210,0.72);
+      text-align: center;
+    }
+    #lightbox figcaption[hidden] { display: none; }
+
+    #lightbox-close {
+      position: fixed;
+      top: 1.5rem; right: 1.75rem;
+      width: 2.6rem; height: 2.6rem;
+      background: rgba(0,0,0,0.5);
+      color: rgba(240,240,240,0.85);
+    }
+    #lightbox-close svg { width: 1.05rem; height: 1.05rem; }
+    @media (max-width: 34rem) {
+      #lightbox-close { top: 1.1rem; right: 1.1rem; width: 2.4rem; height: 2.4rem; }
+    }
+
+    .shot-zoom { cursor: zoom-in; }
+
     /* ── Footer ──────────────────────────────────────────────────────────── */
     #site-footer {
       position: relative;
@@ -641,19 +698,19 @@
           <h2 id="gallery-title">Gallery</h2>
           <ul class="shots">
             <li><figure>
-              <span class="frame"><img src="image1.jpg" alt="Bassist singing into a mic, lit by green LED strips" loading="lazy"></span>
+              <a class="shot-zoom" href="photos/image1.jpg"><span class="frame"><img src="photos/image1-thumb.jpg" alt="Bassist singing into a mic, lit by green LED strips" loading="lazy"></span></a>
             </figure></li>
             <li><figure>
-              <span class="frame"><img src="image2.jpg" alt="Drummer in sunglasses behind the cymbals, drums lit red" loading="lazy"></span>
+              <a class="shot-zoom" href="photos/image2.jpg"><span class="frame"><img src="photos/image2-thumb.jpg" alt="Drummer in sunglasses behind the cymbals, drums lit red" loading="lazy"></span></a>
             </figure></li>
             <li><figure>
-              <span class="frame"><img src="image3.jpg" alt="Singer with a guitar beside the keyboard player at a Nord Stage" loading="lazy"></span>
+              <a class="shot-zoom" href="photos/image3.jpg"><span class="frame"><img src="photos/image3-thumb.jpg" alt="Singer with a guitar beside the keyboard player at a Nord Stage" loading="lazy"></span></a>
             </figure></li>
             <li><figure>
-              <span class="frame"><img src="image4.jpg" alt="Vocalist in a varsity jacket singing, drummer behind" loading="lazy"></span>
+              <a class="shot-zoom" href="photos/image4.jpg"><span class="frame"><img src="photos/image4-thumb.jpg" alt="Vocalist in a varsity jacket singing, drummer behind" loading="lazy"></span></a>
             </figure></li>
             <li><figure>
-              <span class="frame"><img src="image5.jpg" alt="Wide view of the band on a dark stage, seen from the audience" loading="lazy"></span>
+              <a class="shot-zoom" href="photos/image5.jpg"><span class="frame"><img src="photos/image5-thumb.jpg" alt="Wide view of the band on a dark stage, seen from the audience" loading="lazy"></span></a>
             </figure></li>
           </ul>
         </div></div>
@@ -668,6 +725,16 @@
         <p class="copy">&copy; 2026 Spellbinding</p>
       </div>
     </footer>
+  </div>
+
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Photo" hidden>
+    <button class="tab-arrow" id="lightbox-close" type="button" aria-label="Close photo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L12 13.4l-6.3 6.3-1.4-1.4L10.6 12 4.3 5.7l1.4-1.4L12 10.6l6.3-6.3z"/></svg>
+    </button>
+    <figure>
+      <img id="lightbox-img" alt="">
+      <figcaption id="lightbox-cap" hidden></figcaption>
+    </figure>
   </div>
 
   <script>
@@ -888,14 +955,20 @@
     prevBtn.addEventListener('click', () => goToTab(activeTab - 1));
     nextBtn.addEventListener('click', () => goToTab(activeTab + 1));
 
-    let stripTimer = 0;
+    let stripTimer = 0, stripFrame = 0;
     stripEl.addEventListener('scroll', () => {
+      // Repaint on every frame of the gesture so the labels and the page
+      // counter follow the strip instead of lagging a debounce behind.
+      if (!stripFrame) {
+        stripFrame = requestAnimationFrame(() => {
+          stripFrame = 0;
+          const i = nearestTab();
+          if (i !== activeTab) { activeTab = i; paintTabs(); }
+          paintPages();
+        });
+      }
       clearTimeout(stripTimer);
-      stripTimer = setTimeout(() => {
-        const i = nearestTab();
-        if (i !== activeTab) { activeTab = i; paintTabs(); }
-        paintPages();
-      }, 90);
+      stripTimer = setTimeout(paintPages, 90);
     }, { passive: true });
 
     // ── Pages within a tab ───────────────────────────────────────────────────
@@ -907,7 +980,10 @@
     const pageUp = document.getElementById('page-up');
     const pageDown = document.getElementById('page-down');
 
-    function currentTabEl() { return tabEls[activeTab]; }
+    // Deliberately the tab under the scroll position, not tabEls[activeTab]:
+    // the counter must describe what is on screen even mid-swipe, when the
+    // tracked index has not caught up yet.
+    function currentTabEl() { return tabEls[nearestTab()]; }
 
     function pagesOf(tab) { return Array.from(tab.querySelectorAll('.page')); }
 
@@ -920,7 +996,11 @@
       const tab = currentTabEl();
       if (!tab) return;
       const n = pagesOf(tab).length;
-      if (n < 2) { pageNav.hidden = true; return; }
+      if (n < 2) {
+        pageNav.hidden = true;
+        pageCount.textContent = '';   // never leave a stale count behind
+        return;
+      }
       const i = pageIndex(tab);
       pageNav.hidden = false;
       pageCount.textContent = (i + 1) + '/' + n;
@@ -929,7 +1009,7 @@
     }
 
     function goToPage(delta) {
-      const tab = currentTabEl();
+      const tab = currentTabEl();      // the visible one
       if (!tab) return;
       const i = Math.max(0, Math.min(pagesOf(tab).length - 1, pageIndex(tab) + delta));
       tab.scrollTo({ top: i * tab.clientHeight, behavior: 'smooth' });
@@ -960,6 +1040,54 @@
       goToTab(activeTab, false);
       paintPages();
     }, { passive: true });
+
+    // ── Lightbox ─────────────────────────────────────────────────────────────
+    // Tiles link to the image file, so the gallery still works without this;
+    // here the click is intercepted to show the photo full screen instead.
+    const lbEl    = document.getElementById('lightbox');
+    const lbImg   = document.getElementById('lightbox-img');
+    const lbCap   = document.getElementById('lightbox-cap');
+    const lbClose = document.getElementById('lightbox-close');
+    let lbReturn  = null;
+
+    function openLightbox(a) {
+      const img = a.querySelector('img');
+      const fig = a.closest('figure');
+      const cap = fig && fig.querySelector('figcaption');
+      lbImg.src = a.getAttribute('href');
+      lbImg.alt = img ? img.alt : '';
+      const text = cap ? cap.textContent.trim() : '';
+      lbCap.textContent = text;
+      lbCap.hidden = !text;
+      lbEl.hidden = false;
+      lbReturn = document.activeElement;
+      lbClose.focus();
+    }
+
+    function closeLightbox() {
+      if (lbEl.hidden) return;
+      lbEl.hidden = true;
+      lbImg.removeAttribute('src');      // let the decoded copy go
+      if (lbReturn && lbReturn.focus) lbReturn.focus();
+      lbReturn = null;
+    }
+
+    stripEl.addEventListener('click', e => {
+      const a = e.target.closest && e.target.closest('a.shot-zoom');
+      if (!a) return;
+      e.preventDefault();
+      openLightbox(a);
+    });
+
+    lbClose.addEventListener('click', closeLightbox);
+    // A press on the backdrop, but not on the photo itself, closes it.
+    lbEl.addEventListener('click', e => { if (e.target === lbEl) closeLightbox(); });
+    document.addEventListener('keydown', e => {
+      if (lbEl.hidden) return;
+      if (e.key === 'Escape') { closeLightbox(); return; }
+      // Only the close button is focusable in here, so keep Tab on it.
+      if (e.key === 'Tab') { e.preventDefault(); lbClose.focus(); }
+    });
 
     // ── Starting playback ────────────────────────────────────────────────────
     // The button is the only control. Nothing else on the page starts or stops

@@ -340,9 +340,16 @@ def load_gallery():
                 die(f"{where}: needs either 'image:' or 'video:'")
             src = asset(it["image"], where)
             href = check_href(str(it["href"]), where) if it.get("href") else ""
+        # scripts/prep-images.py writes NAME-thumb.jpg beside NAME.jpg; use it
+        # for the tile when it is there, and keep the full file for the zoom.
+        stem, dot, ext = src.rpartition(".")
+        thumb = f"{stem}-thumb.{ext}" if dot else ""
+        if not thumb or not (PUBLIC / thumb).exists():
+            thumb = src
         items.append({
             "kind": kind,
             "src": src,
+            "thumb": thumb,
             "href": href,
             "alt": str(it["alt"]),
             "text": str(it["text"]) if it.get("text") else "",
@@ -373,7 +380,7 @@ def render_gallery(heading, note, per_page, items):
             out.append(f'{I}  <ul class="shots">')
             for n, it in enumerate(group, 1):
                 where = f"gallery.yaml: items[{n}]"
-                img = (f'<img src="{e(it["src"])}" alt="{e(it["alt"])}" loading="lazy">')
+                img = (f'<img src="{e(it["thumb"])}" alt="{e(it["alt"])}" loading="lazy">')
                 badge = (f'<span class="play-badge"><span>{PLAY_SVG}</span></span>'
                          if it["kind"] == "video" else "")
                 frame = f'<span class="frame">{img}{badge}</span>'
@@ -381,6 +388,10 @@ def render_gallery(heading, note, per_page, items):
                 if it["href"]:
                     rel = ' target="_blank" rel="noopener"' if it["kind"] == "video" else ""
                     out.append(f'{I}      <a href="{e(it["href"])}"{rel}>{frame}</a>')
+                elif it["kind"] == "image":
+                    # Links to the file itself, so it still opens without
+                    # scripting; the page intercepts the click for a lightbox.
+                    out.append(f'{I}      <a class="shot-zoom" href="{e(it["src"])}">{frame}</a>')
                 else:
                     out.append(f"{I}      {frame}")
                 if it["text"]:

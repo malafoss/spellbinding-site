@@ -7,6 +7,14 @@
 # It rewrites the block between GALLERY:START and GALLERY:END in
 # public/index.html. Do not hand-edit the page between those markers.
 #
+# Photos live in photos-src/ as originals and are prepared for the web by
+#
+#     ./scripts/prep-images.py
+#
+# which writes public/photos/NAME.jpg plus public/photos/NAME-thumb.jpg. Name
+# the full version here; the thumbnail is picked up automatically for the tile,
+# and clicking a tile opens the full version full screen.
+#
 # Each item is either an image or a video:
 #
 #   image:  a file inside public/, e.g. photos/live-01.jpg
@@ -34,27 +42,27 @@ note: ""
 per_page: 6
 
 items:
-  - image: image1.jpg
+  - image: photos/image1.jpg
     alt: "Bassist singing into a mic, lit by green LED strips"
-  - image: image2.jpg
+  - image: photos/image2.jpg
     alt: "Drummer in sunglasses behind the cymbals, drums lit red"
-  - image: image3.jpg
+  - image: photos/image3.jpg
     alt: "Singer with a guitar beside the keyboard player at a Nord Stage"
-  - image: image4.jpg
+  - image: photos/image4.jpg
     alt: "Vocalist in a varsity jacket singing, drummer behind"
-  - image: image5.jpg
+  - image: photos/image5.jpg
     alt: "Wide view of the band on a dark stage, seen from the audience"
 
 # Add a short caption to any item with text:, which takes the same Markdown
 # as the story — for example:
 #
-#   - image: image1.jpg
+#   - image: photos/image1.jpg
 #     alt: "Bassist singing into a mic, lit by green LED strips"
 #     text: "Tavastia, Nov 2026"
 #
 # A video is a link plus a poster image inside public/:
 #
 #   - video: https://www.youtube.com/watch?v=XXXXXXXXXXX
-#     poster: image2.jpg
+#     poster: photos/image2.jpg
 #     alt: "Still from the Spellcasting live video"
 #     text: "Spellcasting — live"
