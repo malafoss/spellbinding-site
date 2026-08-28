@@ -1086,8 +1086,17 @@
 
     function paintTabs() {
       linkEls.forEach((l, i) => l.setAttribute('aria-current', i === activeTab ? 'true' : 'false'));
-      prevBtn.disabled = activeTab === 0;
-      nextBtn.disabled = activeTab === tabEls.length - 1;
+      const atStart = activeTab === 0;
+      const atEnd = activeTab === tabEls.length - 1;
+      // Disabling the button that currently has focus drops focus to the body,
+      // which killed keyboard navigation as soon as you reached either end.
+      // Hand focus to the current label first.
+      if ((atStart && document.activeElement === prevBtn) ||
+          (atEnd && document.activeElement === nextBtn)) {
+        linkEls[activeTab].focus();
+      }
+      prevBtn.disabled = atStart;
+      nextBtn.disabled = atEnd;
     }
 
     function goToTab(i, smooth) {
@@ -1103,6 +1112,12 @@
     linkEls.forEach((l, i) => l.addEventListener('click', () => goToTab(i)));
     prevBtn.addEventListener('click', () => goToTab(activeTab - 1));
     nextBtn.addEventListener('click', () => goToTab(activeTab + 1));
+
+    // Left/right arrow keys move between panels while the bar has focus.
+    document.getElementById('tabbar').addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') { goToTab(activeTab + 1); e.preventDefault(); }
+      if (e.key === 'ArrowLeft')  { goToTab(activeTab - 1); e.preventDefault(); }
+    });
 
     let stripFrame = 0;
     stripEl.addEventListener('scroll', () => {
@@ -1168,6 +1183,12 @@
     }
 
     buildPageArrows();
+
+    // Open on Live, and keep that panel centred when the viewport resizes.
+    // Without this the strip sits at Story while the markup already marks Live
+    // as current — the two disagreed until something else moved the strip.
+    goToTab(activeTab, false);
+    window.addEventListener('resize', () => goToTab(activeTab, false), { passive: true });
 
     // ── Lightbox ─────────────────────────────────────────────────────────────
     // Tiles link to the image file, so the gallery still works without this;
