@@ -420,7 +420,7 @@
     }
 
     // ── Audio ────────────────────────────────────────────────────────────────
-    let ac = null, analyser = null, freqData = null, gainNode = null;
+    let ac = null, analyser = null, freqData = null, gainNode = null, visGain = null;
     let sBass = 0, sFlux = 0, punch = 0;
     let kick = 0, snare = 0, hat = 0, keys = 0, pitch = 0;
     let prevRawKick = 0, prevRawSnare = 0;
@@ -430,8 +430,15 @@
     let bassMin = 1.0, bassMax = 0.0;
     let audioEl = null;
 
-    // 30% at the top of the page, 100% at the last scroll position.
+    // 30% at the top of the page, 100% at the last scroll position — as a volume
+    // slider means it, not as raw amplitude. Amplitude 0.30 is only -10.5 dB and
+    // already sounds about half as loud, which made the sweep hard to hear; the
+    // square curve below makes 30% amplitude 0.09, so the ramp spans ~21 dB.
     const VOL_MIN = 0.30, VOL_MAX = 1.00;
+
+    // The visuals get their own gentler ramp. Driving them off the audible gain
+    // left the first screen looking dead at -21 dB.
+    const VIS_MIN = 0.45, VIS_MAX = 1.00;
 
     function buildGraph() {
       if (ac) return;
@@ -448,15 +455,19 @@
       analyser.smoothingTimeConstant = 0.75;
       freqData = new Uint8Array(analyser.frequencyBinCount);
 
-      gainNode = ac.createGain();
-      gainNode.gain.value = VOL_MIN;        // scroll position owns the volume
+      gainNode = ac.createGain();                 // what you hear
+      gainNode.gain.value = VOL_MIN * VOL_MIN;
+      visGain = ac.createGain();                  // what the animation sees
+      visGain.gain.value = VIS_MIN;
 
       const src = ac.createMediaElementSource(audioEl);
-      // The analyser sits AFTER the gain, so it measures the scroll-scaled
-      // signal and the animation calms down or builds up with the volume.
+      // Two independent taps off the source: the audible path, and a separate
+      // one into the analyser. Both scale with scroll, but on different curves,
+      // so the volume can drop right down without the animation dying with it.
       src.connect(gainNode);
-      gainNode.connect(analyser);
-      analyser.connect(ac.destination);
+      gainNode.connect(ac.destination);
+      src.connect(visGain);
+      visGain.connect(analyser);
 
       audioEl.addEventListener('play',   syncButton);
       audioEl.addEventListener('pause',  syncButton);
@@ -493,11 +504,14 @@
     function applyVolume() {
       if (!ac || !gainNode) return;
       const t = Math.max(0, Math.min(1, pageOff / maxScroll));
-      const target = VOL_MIN + (VOL_MAX - VOL_MIN) * t;
-      if (Math.abs(target - lastVol) < 0.004) return;   // called every frame
-      lastVol = target;
+      const slider = VOL_MIN + (VOL_MAX - VOL_MIN) * t;
+      if (Math.abs(slider - lastVol) < 0.004) return;   // called every frame
+      lastVol = slider;
+      // Squared: a slider reads as loudness, and loudness is not amplitude.
+      const amp = slider * slider;
       // Ramp, so unlocking partway down the page fades in instead of jumping.
-      gainNode.gain.setTargetAtTime(target, ac.currentTime, 0.12);
+      gainNode.gain.setTargetAtTime(amp, ac.currentTime, 0.12);
+      visGain.gain.setTargetAtTime(VIS_MIN + (VIS_MAX - VIS_MIN) * t, ac.currentTime, 0.12);
     }
 
     // ── Scroll position ──────────────────────────────────────────────────────
