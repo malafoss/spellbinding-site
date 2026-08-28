@@ -64,7 +64,12 @@
 
     #brand {
       position: fixed;
-      top: 50%; left: 50%;
+      /* 50vh, not 50%. A percentage on a fixed element resolves against the
+         live viewport, so when a phone's URL bar slides away the viewport grows
+         and half of it moves down, taking the logo and wordmark with it. vh and
+         svh are both fixed lengths and never move; svh, where supported, is
+         half the viewport with the bar shown, which is how the page loads. */
+      top: 50vh; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 5;
       display: flex;
@@ -615,6 +620,7 @@
     @supports (height: 100svh) {
       #hero { height: 100svh; }
       #screen-two { min-height: 100svh; }
+      #brand { top: 50svh; }
       #logo { --logo-cap: calc(100svh - 17rem); }
     }
   </style>
