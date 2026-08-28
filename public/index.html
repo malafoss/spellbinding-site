@@ -584,14 +584,16 @@
       .tab .note { padding-right: 3.6rem; }
     }
 
-    /* dvh, not svh: the two screenfuls must match the viewport as it actually
-       is. svh excludes a mobile URL bar, which left the second screenful
-       shorter than the window whenever the bar was hidden — the hero then
-       showed above the tab bar at the end of the scroll. */
-    @supports (height: 100dvh) {
-      #hero { height: 100dvh; }
-      #screen-two { min-height: 100dvh; }
-      #logo { --logo-cap: calc(100dvh - 14rem); }
+    /* svh, not dvh. dvh tracks the viewport as a phone's URL bar slides away,
+       which grows the hero mid-scroll and shoves the tab bar down — a visible
+       jump the moment scrolling stops. svh is the viewport with the bar shown
+       and never changes, so nothing above the fold moves. #scroll-tail then
+       makes up the difference at the very end of the page, where resizing it
+       cannot shift anything on screen. */
+    @supports (height: 100svh) {
+      #hero { height: 100svh; }
+      #screen-two { min-height: 100svh; }
+      #logo { --logo-cap: calc(100svh - 14rem); }
     }
   </style>
 </head>
@@ -718,6 +720,11 @@
       </div>
     </footer>
   </div>
+
+  <!-- Sized by script to whatever a hidden URL bar adds to the viewport, so the
+       tab bar can still be scrolled right to the top. Last in the document, so
+       changing its height never moves anything that is on screen. -->
+  <div id="scroll-tail" aria-hidden="true"></div>
 
   <div id="lightbox" role="dialog" aria-modal="true" aria-label="Photo" hidden>
     <button class="tab-arrow" id="lightbox-close" type="button" aria-label="Close photo">
@@ -922,7 +929,23 @@
 
     // Cached: reading scrollHeight forces layout, and this is read every frame.
     let maxScroll = 1;
+    const tailEl = document.getElementById('scroll-tail');
+
+    function svhPx() {
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden;height:100svh';
+      document.body.appendChild(probe);
+      const h = probe.getBoundingClientRect().height;
+      probe.remove();
+      return h || window.innerHeight;      // no svh support: nothing to make up
+    }
+
     function measure() {
+      // The page is two svh screenfuls, which is short of the window whenever a
+      // URL bar is hidden. Pad the very end by the difference so the last scroll
+      // position still puts the tab bar at the top. Growing a box after all the
+      // content extends the scroll range without moving any of it.
+      tailEl.style.height = Math.max(0, Math.round(window.innerHeight - svhPx())) + 'px';
       maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
     }
 
