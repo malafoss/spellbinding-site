@@ -111,7 +111,7 @@
     }
     @supports (height: 100svh) {
       #hero { height: 100svh; }
-      #calendar { margin-top: 50svh; }
+      #calendar { margin-top: 40svh; margin-bottom: 10svh; }
     }
 
     #scroll-cue {
@@ -144,10 +144,12 @@
     #calendar {
       position: relative;
       z-index: 4;
-      /* Extra scroll runway: half a viewport of animation before the listings
-         arrive. Placed above the calendar so the footer still lands at the
-         bottom of the final screen. */
-      margin-top: 50vh;
+      /* Extra scroll runway, half a viewport in total, split 40/10: most of it
+         above the listings, the rest between the listings and the footer.
+         Redistributing keeps the total scroll length the same and the footer
+         still lands at the bottom of the final screen. */
+      margin-top: 40vh;
+      margin-bottom: 10vh;
       padding: clamp(1.75rem, 6vh, 3.5rem) clamp(1.25rem, 6vw, 4rem) clamp(1.5rem, 4vh, 2.5rem);
       /* deliberately no background: the animation stays visible behind the
          listings and is never dimmed. Legibility comes from text-shadow. */
