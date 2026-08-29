@@ -13,4 +13,23 @@ The public availability of this repository on GitHub and on the internet does no
 constitute a grant of any license or permission to use, copy, or distribute any
 of its contents.
 
+THIRD-PARTY CONTENT
+
+The terms above cover Spellbinding's own work. They do not, and cannot, apply to
+the following, which is included under its own licence and remains the property
+of its authors:
+
+  public/fonts/*.woff2   The IBM Plex Sans, IBM Plex Mono and Poppins typefaces,
+                         licensed under the SIL Open Font License, Version 1.1.
+                         Copyright (c) 2017 IBM Corp., with Reserved Font Name
+                         "Plex". Copyright 2020 The Poppins Project Authors.
+                         Full terms: public/fonts/OFL-IBMPlex.txt and
+                         public/fonts/OFL-Poppins.txt.
+
+The Open Font License permits these files to be used, copied, embedded,
+redistributed and sold with other software, provided the copyright notice and
+licence accompany them — which is why those two files sit alongside the fonts.
+Nothing in this LICENSE restricts those rights, and nothing in it grants any
+right to the typefaces beyond what the Open Font License already gives.
+
 For licensing inquiries: contact@spellbinding.band
