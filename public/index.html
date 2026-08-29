@@ -1071,6 +1071,7 @@
     // The logo is fixed, so without this it would sit on top of the listings.
     // Fade it over the first half viewport, before the calendar arrives.
     const cueEl = document.getElementById('scroll-cue');
+    let brandLive = false;      // is the logo currently taking clicks?
     let pageOff = 0, fade = 1, lastBright = -1;
 
     // Cached: reading scrollHeight forces layout, and this is read every frame.
@@ -1133,10 +1134,18 @@
 
     // The cue is a button as well as an indicator: scrolling down is the whole
     // interaction, so offer a press for anyone who finds the gesture awkward.
-    cueEl.addEventListener('click', () => {
+    function scrollToSections() {
       window.scrollTo({ top: document.documentElement.scrollHeight,
                         behavior: 'smooth' });
-    });
+    }
+
+    cueEl.addEventListener('click', scrollToSections);
+
+    // The logo does the same thing. Deliberately not focusable and given no
+    // button role: the cue above already is, and a second tab stop for the same
+    // action would just be noise for anyone using a keyboard or a screen
+    // reader. This is a mouse and touch convenience on top of that.
+    brandEl.addEventListener('click', scrollToSections);
 
     // ── Tabs ─────────────────────────────────────────────────────────────────
     // Three panels side by side in one horizontal scroller with snap points.
@@ -1661,6 +1670,15 @@
         Math.sin(t * 6.7)  * 0.2
       );
       brandEl.style.opacity = (v * fade).toFixed(3);
+      // #brand is fixed and stays over the middle of the viewport after it has
+      // faded, so it has to stop intercepting clicks — otherwise it swallows
+      // presses on whatever panel content sits under it.
+      const live = fade > 0.05;
+      if (live !== brandLive) {
+        brandLive = live;
+        brandEl.style.pointerEvents = live ? 'auto' : 'none';
+        brandEl.style.cursor = live ? 'pointer' : '';
+      }
       cueEl.style.opacity  = fade.toFixed(3);
       // darken, rather than only thinning out
       const b = 0.45 + 0.55 * fade;
