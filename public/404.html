@@ -7,10 +7,17 @@
   <meta name="robots" content="noindex">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <meta name="theme-color" content="#080808">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: 'IBM Plex Sans';
+      font-style: normal; font-weight: 600; font-display: swap;
+      src: url(fonts/IBMPlexSans-600-latin.woff2) format('woff2');
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      font-style: normal; font-weight: 400; font-display: swap;
+      src: url(fonts/IBMPlexMono-400-latin.woff2) format('woff2');
+    }
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { min-height: 100%; background: #080808; color: #e8e8e8; }
     body {
@@ -22,12 +29,13 @@
       min-height: 100svh;
       padding: 2rem;
       text-align: center;
-      font-family: 'Share Tech Mono', monospace;
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
     }
     img { width: clamp(6rem, 22vmin, 11rem); height: auto; }
     h1 {
-      font-size: clamp(0.9rem, 3vw, 1.15rem);
-      font-weight: 400;
+      font-family: 'IBM Plex Sans', system-ui, sans-serif;
+      font-size: clamp(0.95rem, 3vw, 1.2rem);
+      font-weight: 600;
       letter-spacing: 0.3em;
       text-indent: 0.3em;
       color: #f2f2f2;
