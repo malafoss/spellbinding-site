@@ -18,8 +18,9 @@ Each tab is one screenful. Content longer than that becomes several pages that
 snap vertically inside the tab: story.yaml lists its pages explicitly, while
 the gig list and the gallery chunk automatically on `per_page`.
 
-Text supports a small, safe Markdown subset — links, bold, italic, code — see
-md() below. Use an `html:` block when raw markup is genuinely needed.
+Text supports a small, safe Markdown subset — links, bold, italic, code, and
+"- item" bullet lists — see md() and md_blocks() below. Use an `html:` block
+when raw markup is genuinely needed.
 
 Use --check to verify the page is up to date without writing (exit 1 if not).
 """
@@ -94,6 +95,59 @@ def md(text, where):
     return out
 
 
+# A list item: "-" or "*" at the start of a line, then a space, then content.
+# A line like "*italic* first" is not a marker: the marker needs the space.
+LIST_ITEM = re.compile(r"^[ \t]*[-*][ \t]+(.*)$")
+
+
+def md_blocks(text, where, indent):
+    """Render one text block into paragraphs and bullet lists.
+
+    Lines are gathered into runs: consecutive "- item" lines become one <ul>,
+    everything else becomes a <p>, and a blank line ends whichever run it
+    follows. Only the marker is consumed here — every character that reaches
+    the page still goes through md(), which escapes before it substitutes, so
+    a YAML file still cannot inject markup.
+
+    Multi-line text needs a literal block scalar (text: |-), not a folded one
+    (text: >-): folding joins the lines with spaces, leaving no line starts for
+    a marker to sit at.
+    """
+    out, para, items = [], [], []
+
+    def flush_para():
+        if para:
+            out.append(f"{indent}<p>{md(' '.join(para), where)}</p>")
+            para.clear()
+
+    def flush_items():
+        if items:
+            out.append(f"{indent}<ul>")
+            out.extend(f"{indent}  <li>{md(it, where)}</li>" for it in items)
+            out.append(f"{indent}</ul>")
+            items.clear()
+
+    for line in str(text).split("\n"):
+        m = LIST_ITEM.match(line)
+        if m:
+            flush_para()
+            item = m.group(1).strip()
+            if not item:
+                die(f"{where}: empty list item — drop the stray marker")
+            items.append(item)
+        elif line.strip():
+            flush_items()
+            para.append(line.strip())
+        else:
+            flush_para()
+            flush_items()
+    flush_para()
+    flush_items()
+    if not out:
+        die(f"{where}: text is empty")
+    return out
+
+
 def asset(src, where):
     """A path inside public/, verified to exist."""
     src = str(src).lstrip("/")
@@ -112,7 +166,7 @@ def render_blocks(blocks, indent, where):
         if not isinstance(block, dict):
             die(f"{at} must be a mapping, e.g. '- text: …'")
         if "text" in block:
-            out.append(f"{indent}  <p>{md(block['text'], at)}</p>")
+            out.extend(md_blocks(block["text"], at, indent + "  "))
         elif "html" in block:
             out.append(f"{indent}  {block['html']}")
         elif "image" in block:
@@ -291,9 +345,9 @@ def render_gigs(heading, note, per_page, events):
             if note:
                 out.append(f'{I}  <p class="note">{md(note, "calendar.yaml note")}</p>')
         if not group:
-            out.append(f'{I}  <p class="note">No dates announced yet. Follow')
+            out.append(f'{I}  <p class="note">Päivämääriä ei ole vielä julkaistu. Seuraa')
             out.append(f'{I}    <a href="{INSTAGRAM}">@spellbinding.band</a>')
-            out.append(f"{I}    for announcements.</p>")
+            out.append(f"{I}    ilmoituksia.</p>")
         else:
             out.append(f'{I}  <ul class="gigs">')
             for n, ev in enumerate(group, 1):

@@ -7,7 +7,10 @@
 #   make            build whatever is out of date
 #   make help       list the targets
 #   make check      verify everything is current, without writing
-#   make clean      delete the generated photos
+#   make clean      delete the generated photos and dist/
+#
+# public/ is the source of truth and keeps its comments; dist/ is the copy that
+# ships, with them stripped. wrangler serves dist/.
 #
 # Run `make help` for the full list.
 
@@ -18,10 +21,12 @@ SRC_DIR := photos-src
 OUT_DIR := public/photos
 PAGE    := public/index.html
 STAMP   := .make/content.stamp
+DIST    := dist
 
 YAML    := story.yaml calendar.yaml gallery.yaml
 CONTENT := scripts/build-content.py
 PREP    := scripts/prep-images.py
+STRIP   := scripts/strip-comments.py
 
 SOURCES := $(wildcard $(SRC_DIR)/*.jpg $(SRC_DIR)/*.jpeg $(SRC_DIR)/*.png $(SRC_DIR)/*.webp)
 NAMES   := $(basename $(notdir $(SOURCES)))
@@ -48,24 +53,33 @@ $(STAMP): $(YAML) $(CONTENT) $(PHOTOS)
 	@$(CONTENT)
 	@touch $@
 
-.PHONY: all photos content check test clean help
+.PHONY: all photos content dist check test test-dist clean help
 
-all: content ## Build everything that is out of date (default)
+all: dist ## Build everything that is out of date (default)
 
 photos: $(PHOTOS) ## Only the web-sized photos and their thumbnails
 
 content: $(STAMP) ## Only render the YAML files into the page
 
+# Phony on purpose: the target shares its name with the directory, and make
+# would otherwise call it up to date the moment dist/ exists.
+dist: content ## Mirror public/ into dist/ with the HTML comments stripped
+	@$(STRIP)
+
 check: ## Verify photos and page are current; exits non-zero if not
 	@$(PREP) --check
 	@$(CONTENT) --check
+	@$(STRIP) --check
 
 test: content ## Run the smoke tests against a headless browser
 	@./tests/smoke.py
 
-clean: ## Delete the generated photos and the build stamp
-	@rm -rf $(OUT_DIR) .make
-	@echo "clean: removed $(OUT_DIR)/ and .make/"
+test-dist: dist ## Run the same checks against the stripped copy that ships
+	@./tests/smoke.py --dir $(DIST)
+
+clean: ## Delete the generated photos, dist/ and the build stamp
+	@rm -rf $(OUT_DIR) .make $(DIST)
+	@echo "clean: removed $(OUT_DIR)/, $(DIST)/ and .make/"
 	@echo "       photos-src/ and the YAML files are untouched; run make to rebuild."
 	@echo "       note: the generated blocks inside $(PAGE) stay as they are —"
 	@echo "       make rewrites them, and 'make clean' will not blank the page."

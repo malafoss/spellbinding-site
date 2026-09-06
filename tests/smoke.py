@@ -32,6 +32,8 @@ from pathlib import Path
 import websocket
 
 ROOT = Path(__file__).resolve().parent.parent
+# --dir points these at dist/ instead, so the stripped copy that actually
+# ships can be put through the same 87 checks as the source.
 PUBLIC = ROOT / "public"
 PAGE = PUBLIC / "index.html"
 
@@ -152,6 +154,22 @@ def static_checks(html):
             check(False, f"{sel} sets display and is used with [hidden]",
                   "needs an explicit [hidden] { display: none }")
 
+    # A "- item" line rendered as a literal dash inside a <p> until the
+    # Markdown subset learned about lists. This asserts the markup, not the
+    # copy: a paragraph still starting with a marker means the run was missed.
+    # Keyed on the panel, not on the STORY:START markers: those are comments
+    # themselves and are gone from the stripped copy that ships.
+    m = re.search(r'<section class="tab" id="tab-story".*?</section>', html, re.S)
+    check(bool(m), "the story panel is in the page")
+    story = m.group(0) if m else ""
+    # A consumed marker leaves no trace, so any line still starting with one
+    # is a run that was rendered as text. Matching only "<p>-" was not enough:
+    # the folded paragraph carried its markers on continuation lines.
+    stray = re.search(r"\n\s*[-*][ \t]", story)
+    check(not stray, "story bullets become a list, not literal markers",
+          f"literal marker in {story[stray.start() + 1:stray.start() + 40]!r}"
+          if stray else "")
+
     # Generated blocks must match the YAML.
     for script, label in ((ROOT / "scripts/build-content.py", "content"),
                           (ROOT / "scripts/prep-images.py", "photos")):
@@ -168,7 +186,7 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
         pass
 
     def __init__(self, *a, **kw):
-        super().__init__(*a, directory=str(PUBLIC), **kw)
+        super().__init__(*a, directory=str(PUBLIC), **kw)   # PUBLIC may be dist/
 
 
 def free_port():
@@ -185,7 +203,12 @@ class Browser:
         self.dev = free_port()
         self.url = f"http://127.0.0.1:{self.port}/"
         self.proc = subprocess.Popen(
+            # BackForwardCache off on purpose: with it, going Back restores the
+            # whole document and the panel survives because nothing re-ran, so
+            # the history check could not fail however broken the restore was.
+            # Off, Back is a real load — the case the restore is written for.
             ["google-chrome", "--headless=new", "--disable-gpu", "--hide-scrollbars",
+             "--disable-features=BackForwardCache",
              f"--remote-debugging-port={self.dev}", "--remote-allow-origins=*",
              "--window-size=1000,800", "--force-device-scale-factor=1", self.url],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -230,6 +253,10 @@ class Browser:
         self.cmd("Page.reload", ignoreCache=False)
         time.sleep(3.0)
 
+    def goto(self, path=""):
+        self.cmd("Page.navigate", url=self.url + path)
+        time.sleep(3.0)
+
     def click(self, selector):
         pos = self.ev(
             "(()=>{const e=document.querySelector(%s); if(!e) return null;"
@@ -272,6 +299,11 @@ CSS_VH = ("(()=>{const p=document.createElement('div');"
           "p.remove();return h||window.innerHeight;})()")
 ACTIVE_LABEL = ("(()=>{const l=document.querySelector('.tab-link[aria-current=\"true\"]');"
                 "return l?l.textContent.trim():null})()")
+# Which tab is highlighted, keyed on data-tab rather than the visible label:
+# the labels are copy and have already been translated once, and asserting on
+# them made seven checks fail for a change that broke nothing.
+ACTIVE_TAB = ("(()=>{const l=document.querySelector('.tab-link[aria-current=\"true\"]');"
+              "return l?l.dataset.tab:null})()")
 PANEL_ON_SCREEN = ("(()=>{const s=document.getElementById('tabs');"
                    "const i=Math.round(s.scrollLeft/Math.max(1,s.clientWidth));"
                    "const t=[...s.querySelectorAll('.tab')][i];return t?t.id:null})()")
@@ -289,14 +321,51 @@ def initial_checks(b):
     geometry sweep passed happily with the bug present.
     """
     section("first paint — before any resize can mask a bad initial state")
-    panel, label = b.ev(PANEL_ON_SCREEN), b.ev(ACTIVE_LABEL)
+    panel, tab, label = b.ev(PANEL_ON_SCREEN), b.ev(ACTIVE_TAB), b.ev(ACTIVE_LABEL)
     check(panel == "tab-live", "on load the strip is on the Live panel",
           f"panel={panel}")
-    check(label == "Live", "on load the Live label is the one highlighted",
-          f"label={label}")
-    check(panel and label and panel.replace("tab-", "").lower() == label.lower(),
+    check(tab == "live", "on load the Live label is the one highlighted",
+          f"tab={tab} label={label!r}")
+    check(panel and tab and panel == f"tab-{tab}",
           "on load the panel and the highlight agree",
-          f"panel={panel} label={label}")
+          f"panel={panel} tab={tab} label={label!r}")
+
+
+def link_checks(b):
+    """Every link must be styled, and legible on the near-black page.
+
+    The Instagram link in the Live tab's note had no rule at all and rendered
+    the UA default #0000EE — 2.1:1 here. The stylesheet contrast check cannot
+    catch that: the colour appears nowhere in the stylesheet, only in the
+    browser's own defaults. So this reads the computed colour instead.
+    """
+    section("links — styled, and legible on the near-black page")
+    rows = b.ev("""[...document.querySelectorAll('a')].map(a=>{
+      return [a.textContent.trim().slice(0,28) || a.getAttribute('href'),
+              getComputedStyle(a).color].join('|');
+    })""")
+    BG = (10, 10, 10)
+    UA_DEFAULTS = {(0, 0, 238), (85, 26, 139)}      # link, visited
+    worst, unstyled = None, []
+    for row in rows or []:
+        label, col = row.split("|", 1)
+        m = re.match(r"rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)", col)
+        if not m:
+            continue
+        rgb = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        alpha = float(m.group(4)) if m.group(4) else 1.0
+        if rgb in UA_DEFAULTS:
+            unstyled.append(label)
+        eff = tuple(round(c * alpha + bg * (1 - alpha)) for c, bg in zip(rgb, BG))
+        cr = contrast(eff, BG)
+        if worst is None or cr < worst[0]:
+            worst = (cr, label, col)
+    check(bool(rows), "the page has links to check", f"found {len(rows or [])}")
+    check(not unstyled, "no link falls back to the browser's default colour",
+          f"unstyled: {unstyled}")
+    check(worst and worst[0] >= 4.5, "every link meets WCAG AA (4.5:1)",
+          f"worst {worst[0]:.2f}:1 on {worst[1]!r} ({worst[2]})"
+          if worst else "no link colours parsed")
 
 
 def geometry_checks(b):
@@ -343,20 +412,19 @@ def tab_checks(b):
     # Reload, so this starts from a genuine first paint at this size rather than
     # whatever the geometry sweep left behind.
     b.reload()
-    check(b.ev(PANEL_ON_SCREEN) == "tab-live" and b.ev(ACTIVE_LABEL) == "Live",
+    check(b.ev(PANEL_ON_SCREEN) == "tab-live" and b.ev(ACTIVE_TAB) == "live",
           "after a reload it is still on Live",
-          f"panel={b.ev(PANEL_ON_SCREEN)} label={b.ev(ACTIVE_LABEL)}")
+          f"panel={b.ev(PANEL_ON_SCREEN)} tab={b.ev(ACTIVE_TAB)}")
     b.ev("window.scrollTo(0,document.documentElement.scrollHeight)")
     time.sleep(0.6)
 
-    for label, sel, want in (("Story", ".tab-link[data-tab='story']", "tab-story"),
-                             ("Gallery", ".tab-link[data-tab='gallery']", "tab-gallery"),
-                             ("Live", ".tab-link[data-tab='live']", "tab-live")):
-        b.click(sel)
+    for key in ("story", "gallery", "live"):
+        b.click(f".tab-link[data-tab='{key}']")
         time.sleep(1.5)
-        check(b.ev(PANEL_ON_SCREEN) == want and b.ev(ACTIVE_LABEL) == label,
-              f"clicking {label} shows {want}",
-              f"panel={b.ev(PANEL_ON_SCREEN)} label={b.ev(ACTIVE_LABEL)}")
+        panel, tab = b.ev(PANEL_ON_SCREEN), b.ev(ACTIVE_TAB)
+        check(panel == f"tab-{key}" and tab == key,
+              f"clicking the {key} label shows tab-{key}",
+              f"panel={panel} tab={tab} label={b.ev(ACTIVE_LABEL)!r}")
 
     # Arrow keys, including surviving the ends where a focused button gets
     # disabled and would otherwise drop focus to the body.
@@ -501,13 +569,68 @@ def lightbox_checks(b):
           "a click on the backdrop closes it")
 
 
+def restore_checks(b):
+    """Back from an external link used to land on Live, whatever you left.
+
+    A story link out to Instagram re-loads the document on the way back rather
+    than restoring it — an open AudioContext keeps the page out of the back/
+    forward cache — and the unconditional open-on-Live then overrode the panel
+    that was being read. Both halves are checked: that the panel is recorded,
+    and that a Back entry actually arrives on it.
+    """
+    section("history — Back returns to the panel you left")
+    b.viewport(1000, 800)
+    b.goto()
+    # The tab bar sits on the second screenful; a click needs it on screen.
+    b.ev("window.scrollTo(0,document.documentElement.scrollHeight)")
+    time.sleep(0.6)
+    b.click(".tab-link[data-tab='story']")
+    time.sleep(1.5)
+    check(b.ev(PANEL_ON_SCREEN) == "tab-story", "parked on Story before leaving",
+          f"panel={b.ev(PANEL_ON_SCREEN)}")
+    stored = b.ev("sessionStorage.getItem('spellbinding:tab')")
+    check(stored == "tab-story", "the panel being read is recorded",
+          f"stored={stored!r}")
+
+    b.goto("404.html")
+    check("Not found" in (b.ev("document.title") or ""),
+          "navigated away to another page", f"title={b.ev('document.title')!r}")
+
+    b.ev("history.back()")
+    time.sleep(3.0)
+    nav = b.ev("(()=>{const e=performance.getEntriesByType('navigation')[0];"
+               "return e?e.type:'?'})()")
+    check(nav == "back_forward",
+          "Back re-loaded the document, so the restore really ran",
+          f"navigation type was {nav!r} — a restored DOM proves nothing here")
+    panel, tab = b.ev(PANEL_ON_SCREEN), b.ev(ACTIVE_TAB)
+    check(panel == "tab-story" and tab == "story",
+          "Back returns to Story, not Live", f"panel={panel} tab={tab}")
+
+    # Only a back/forward entry restores: a fresh load still opens on Live.
+    b.reload()
+    panel, tab = b.ev(PANEL_ON_SCREEN), b.ev(ACTIVE_TAB)
+    check(panel == "tab-live" and tab == "live",
+          "a reload still opens on Live", f"panel={panel} tab={tab}")
+
+
 def main():
     global VERBOSE
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="print passing checks too")
+    ap.add_argument("--dir", default="public", metavar="DIR",
+                    help="serve and check this directory instead of public/")
     args = ap.parse_args()
     VERBOSE = args.verbose
+
+    global PUBLIC, PAGE
+    PUBLIC = ROOT / args.dir
+    PAGE = PUBLIC / "index.html"
+    if not PAGE.exists():
+        sys.exit(f"smoke: {PAGE} not found")
+    if args.dir != "public":
+        print(f"checking {args.dir}/")
 
     started = time.time()
     static_checks(PAGE.read_text(encoding="utf-8"))
@@ -516,10 +639,12 @@ def main():
     try:
         b = Browser()
         initial_checks(b)          # before any resize, see the docstring
+        link_checks(b)             # computed styles only, no resize
         geometry_checks(b)
         tab_checks(b)
         audio_checks(b)
         lightbox_checks(b)
+        restore_checks(b)
     except Exception as e:                              # noqa: BLE001
         check(False, "browser checks ran", f"{type(e).__name__}: {e}")
     finally:

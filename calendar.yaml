@@ -17,7 +17,7 @@
 # ---------------------------------------------------------------------------
 
 # The tab's own heading.
-heading: "Spellbinding.band LIVE"
+heading: "Spellbinding keikat"
 
 # Split the listings into screenfuls that snap vertically inside the tab.
 # 0 or absent puts them all on one page.
@@ -25,7 +25,7 @@ per_page: 5
 
 # A line shown above the list. Set to "" to remove it entirely. Takes the same
 # Markdown subset as story.yaml: [links](https://…), **bold**, *italic*, `code`.
-note: "More events coming soon. Stay tuned."
+note: "Uudet keikat pian täällä. Pysykää taajuudella."
 
 # An empty list (events: []) renders the "no dates announced yet" state,
 # which is the safe thing to publish when nothing is confirmed.

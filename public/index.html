@@ -14,7 +14,7 @@
 
   <meta property="og:type"        content="music.band">
   <meta property="og:site_name"   content="Spellbinding">
-  <meta property="og:locale"      content="en">
+  <meta property="og:locale"      content="fi_FI">
   <meta property="og:title"       content="Spellbinding">
   <meta property="og:description" content="Spellbinding — a new band.">
   <meta property="og:url"         content="https://spellbinding.band">
@@ -417,7 +417,7 @@
       font-size: clamp(0.8rem, 2vw, 0.95rem);
       line-height: 1.7;
       letter-spacing: 0;
-      color: rgba(226,226,226,0.88);
+      color: rgba(190,190,190,0.62);
     }
     .prose > * + * { margin-top: 1rem; }
     .prose a {
@@ -428,6 +428,16 @@
     .prose a:hover { border-bottom-color: rgba(214,176,246,1); }
     .prose strong { color: #fff; font-weight: 700; }
     .prose em { font-style: italic; color: #f0f0f0; }
+    .prose ul {
+      padding-left: 1.15em;
+      font-family: 'IBM Plex Sans', system-ui, sans-serif;
+      font-size: clamp(0.8rem, 2vw, 0.95rem);
+      line-height: 1.7;
+      letter-spacing: 0;
+      color: rgba(190,190,190,0.62);
+    }
+    .prose li + li { margin-top: 0.35rem; }
+    .prose li::marker { color: rgba(214,176,246,0.95); }
     .prose code {
       font-family: 'IBM Plex Mono', ui-monospace, monospace;
       font-size: 0.88em;
@@ -510,14 +520,22 @@
       margin-bottom: 0.5rem;
     }
 
+    /* Same metrics as .prose p: a note is the Live and Gallery tabs' body
+       text, and a smaller size here made the text jump on every tab change. */
     .note {
       font-family: 'IBM Plex Sans', system-ui, sans-serif;
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
+      font-size: clamp(0.8rem, 2vw, 0.95rem);
+      letter-spacing: 0;
       line-height: 1.7;
       color: rgba(190,190,190,0.62);
       margin-bottom: 1.5rem;
     }
+    .note a {
+      color: rgba(214,176,246,0.95);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(214,176,246,0.45);
+    }
+    .note a:hover { border-bottom-color: rgba(214,176,246,1); }
 
     .gigs { list-style: none; }
 
@@ -704,7 +722,7 @@
       .page { padding-top: 0.8rem; padding-bottom: 0.35rem; }
       #tabbar { padding-top: 0.5rem; }
       .tab h2 { margin-bottom: 0.25rem; }
-      .note { margin-bottom: 0.5rem; font-size: 0.62rem; line-height: 1.45; }
+      .note { margin-bottom: 0.5rem; }
       .gig { padding: 0.45rem 0; }
       .city { margin-top: 0.08rem; }
       #site-footer { padding-bottom: 0.8rem; }
@@ -775,9 +793,9 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7z"/></svg>
         </button>
         <div id="tabbar-labels">
-          <button class="tab-link" type="button" data-tab="story"   aria-current="false">Story</button>
-          <button class="tab-link" type="button" data-tab="live"    aria-current="true">Live</button>
-          <button class="tab-link" type="button" data-tab="gallery" aria-current="false">Gallery</button>
+          <button class="tab-link" type="button" data-tab="story"   aria-current="false">Tarinamme</button>
+          <button class="tab-link" type="button" data-tab="live"    aria-current="true">Keikat</button>
+          <button class="tab-link" type="button" data-tab="gallery" aria-current="false">Galleria</button>
         </div>
         <button class="tab-arrow" id="tab-next" type="button" aria-label="Next section">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7z"/></svg>
@@ -790,9 +808,16 @@
         <!-- STORY:START — generated from story.yaml by scripts/build-content.py.
              Edit the YAML and re-run; do not hand-edit this block. -->
         <div class="page"><div class="wrap">
-          <h2 id="story-title">The Story</h2>
+          <h2 id="story-title">Tarinamme</h2>
           <div class="prose">
-            <p>The story coming here soon...</p>
+            <p>Spellbinding jäsenet:</p>
+            <ul>
+              <li>Rummuissa <a href="https://www.instagram.com/spellbinding.band/p/DcqhcojDDD_/">Eeli</a></li>
+              <li>Bassossa <a href="https://www.instagram.com/spellbinding.band/p/DctY4VvjK4O/">Kalle</a></li>
+              <li>Kiipparissa <a href="https://www.instagram.com/spellbinding.band/p/Dcv2EwkjFNv/">Touko</a></li>
+              <li>Kitarassa <a href="https://www.instagram.com/spellbinding.band/p/Dcy0zNIDH3t/">Vilma</a></li>
+              <li>Laulu <a href="https://www.instagram.com/spellbinding.band/p/Dc1dj9cDFwP/">Topias</a></li>
+            </ul>
           </div>
         </div></div>
         <!-- STORY:END -->
@@ -802,11 +827,11 @@
         <!-- GIGS:START — generated from calendar.yaml by scripts/build-content.py.
              Edit the YAML and re-run; do not hand-edit this block. -->
         <div class="page"><div class="wrap">
-          <h2 id="live-title">Spellbinding.band LIVE</h2>
-          <p class="note">More events coming soon. Stay tuned.</p>
-          <p class="note">No dates announced yet. Follow
+          <h2 id="live-title">Spellbinding keikat</h2>
+          <p class="note">Uudet keikat pian täällä. Pysykää taajuudella.</p>
+          <p class="note">Päivämääriä ei ole vielä julkaistu. Seuraa
             <a href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
-            for announcements.</p>
+            ilmoituksia.</p>
         </div></div>
         <!-- GIGS:END -->
       </section>
@@ -815,22 +840,22 @@
         <!-- GALLERY:START — generated from gallery.yaml by scripts/build-content.py.
              Edit the YAML and re-run; do not hand-edit this block. -->
         <div class="page"><div class="wrap">
-          <h2 id="gallery-title">Gallery</h2>
+          <h2 id="gallery-title">Galleria</h2>
           <ul class="shots">
             <li><figure>
-              <a class="shot-zoom" href="photos/image1.jpg"><span class="frame"><img src="photos/image1-thumb.jpg" alt="Bassist singing into a mic, lit by green LED strips" loading="lazy"></span></a>
+              <a class="shot-zoom" href="photos/image1.jpg"><span class="frame"><img src="photos/image1-thumb.jpg" alt="Kalle laulaa" loading="lazy"></span></a>
             </figure></li>
             <li><figure>
-              <a class="shot-zoom" href="photos/image2.jpg"><span class="frame"><img src="photos/image2-thumb.jpg" alt="Drummer in sunglasses behind the cymbals, drums lit red" loading="lazy"></span></a>
+              <a class="shot-zoom" href="photos/image2.jpg"><span class="frame"><img src="photos/image2-thumb.jpg" alt="Eeli rummuissa" loading="lazy"></span></a>
             </figure></li>
             <li><figure>
-              <a class="shot-zoom" href="photos/image3.jpg"><span class="frame"><img src="photos/image3-thumb.jpg" alt="Singer with a guitar beside the keyboard player at a Nord Stage" loading="lazy"></span></a>
+              <a class="shot-zoom" href="photos/image3.jpg"><span class="frame"><img src="photos/image3-thumb.jpg" alt="Vilma ja Touko" loading="lazy"></span></a>
             </figure></li>
             <li><figure>
-              <a class="shot-zoom" href="photos/image4.jpg"><span class="frame"><img src="photos/image4-thumb.jpg" alt="Vocalist in a varsity jacket singing, drummer behind" loading="lazy"></span></a>
+              <a class="shot-zoom" href="photos/image4.jpg"><span class="frame"><img src="photos/image4-thumb.jpg" alt="Topias vauhdissa" loading="lazy"></span></a>
             </figure></li>
             <li><figure>
-              <a class="shot-zoom" href="photos/image5.jpg"><span class="frame"><img src="photos/image5-thumb.jpg" alt="Wide view of the band on a dark stage, seen from the audience" loading="lazy"></span></a>
+              <a class="shot-zoom" href="photos/image5.jpg"><span class="frame"><img src="photos/image5-thumb.jpg" alt="Keikka yleisöä" loading="lazy"></span></a>
             </figure></li>
           </ul>
         </div></div>
@@ -840,7 +865,7 @@
 
     <footer id="site-footer">
       <div class="wrap">
-        <a href="https://linktr.ee/spellbinding.band">all links</a>
+        <a href="https://linktr.ee/spellbinding.band">linkit</a>
         <a href="https://www.instagram.com/spellbinding.band/">@spellbinding.band</a>
         <a href="mailto:contact@spellbinding.band">contact@spellbinding.band</a>
         <p class="copy">&copy; 2026 Spellbinding</p>
@@ -1150,6 +1175,36 @@
     let activeTab = tabEls.findIndex(t => t.id === 'tab-live');
     if (activeTab < 0) activeTab = 0;
 
+    // Following a story link out to Instagram and pressing Back re-loads the
+    // document rather than restoring it — an open AudioContext disqualifies
+    // the page from the back/forward cache — and the unconditional open-on-Live
+    // below then landed you on the wrong panel. So remember the panel, and
+    // restore it only for a back/forward entry: a fresh visit and a reload
+    // still open on Live, which is the documented behaviour.
+    const TAB_KEY = 'spellbinding:tab';
+
+    function rememberTab() {
+      try { sessionStorage.setItem(TAB_KEY, tabEls[activeTab].id); }
+      catch (e) { /* private mode throws; the panel just will not be restored */ }
+    }
+
+    function navType() {
+      const nav = performance.getEntriesByType
+                && performance.getEntriesByType('navigation')[0];
+      if (nav && nav.type) return nav.type;
+      // Deprecated, but the only signal older Safari offers. 2 is back/forward.
+      return performance.navigation && performance.navigation.type === 2
+           ? 'back_forward' : 'navigate';
+    }
+
+    function tabToOpen() {
+      if (navType() !== 'back_forward') return activeTab;
+      let id;
+      try { id = sessionStorage.getItem(TAB_KEY); } catch (e) { return activeTab; }
+      const i = tabEls.findIndex(t => t.id === id);
+      return i < 0 ? activeTab : i;
+    }
+
     function nearestTab() {
       // Index from scroll position rather than tracking it, so a native swipe
       // and an arrow press can never disagree.
@@ -1180,6 +1235,7 @@
       const tab = tabEls[activeTab];
       if (tab) tab.scrollTop = 0;
       paintTabs();
+      rememberTab();
     }
 
     linkEls.forEach((l, i) => l.addEventListener('click', () => goToTab(i)));
@@ -1200,7 +1256,7 @@
         stripFrame = requestAnimationFrame(() => {
           stripFrame = 0;
           const i = nearestTab();
-          if (i !== activeTab) { activeTab = i; paintTabs(); }
+          if (i !== activeTab) { activeTab = i; paintTabs(); rememberTab(); }
         });
       }
     }, { passive: true });
@@ -1257,10 +1313,11 @@
 
     buildPageArrows();
 
-    // Open on Live, and keep that panel centred when the viewport resizes.
-    // Without this the strip sits at Story while the markup already marks Live
-    // as current — the two disagreed until something else moved the strip.
-    goToTab(activeTab, false);
+    // Open on Live — or on the panel you left, if this is a Back/Forward entry
+    // — and keep that panel centred when the viewport resizes. Without this the
+    // strip sits at Story while the markup already marks Live as current: the
+    // two disagreed until something else moved the strip.
+    goToTab(tabToOpen(), false);
     window.addEventListener('resize', () => goToTab(activeTab, false), { passive: true });
 
     // ── Lightbox ─────────────────────────────────────────────────────────────

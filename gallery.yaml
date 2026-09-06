@@ -34,7 +34,7 @@
 # tab. 0 or absent puts them all on one page.
 # ---------------------------------------------------------------------------
 
-heading: "Gallery"
+heading: "Galleria"
 
 # A line under the heading. Set to "" to remove it.
 note: ""
@@ -43,15 +43,15 @@ per_page: 6
 
 items:
   - image: photos/image1.jpg
-    alt: "Bassist singing into a mic, lit by green LED strips"
+    alt: "Kalle laulaa"
   - image: photos/image2.jpg
-    alt: "Drummer in sunglasses behind the cymbals, drums lit red"
+    alt: "Eeli rummuissa"
   - image: photos/image3.jpg
-    alt: "Singer with a guitar beside the keyboard player at a Nord Stage"
+    alt: "Vilma ja Touko"
   - image: photos/image4.jpg
-    alt: "Vocalist in a varsity jacket singing, drummer behind"
+    alt: "Topias vauhdissa"
   - image: photos/image5.jpg
-    alt: "Wide view of the band on a dark stage, seen from the audience"
+    alt: "Keikka yleisöä"
 
 # Add a short caption to any item with text:, which takes the same Markdown
 # as the story — for example:

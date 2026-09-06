@@ -14,6 +14,18 @@
 #                                           inside public/ such as photos/x.jpg)
 #     **bold**        *italic*        `code`
 #
+# LISTS — a line starting with "- " (or "* ") becomes a bullet. Consecutive
+# bullets form one list; any other line is a paragraph. That needs real line
+# breaks, so write the block with a literal scalar:
+#
+#     - text: |-              # |- keeps the line breaks
+#         Lead-in line:
+#         - first bullet
+#         - second bullet
+#
+# Use |- and not >-: the folded scalar joins its lines with spaces, and the
+# markers then sit mid-paragraph where they are just literal characters.
+#
 # Anything else, including stray < and &, is shown literally rather than
 # breaking the page. When you genuinely need raw markup, use an html: block.
 #
@@ -21,12 +33,17 @@
 # long content stays readable instead of overflowing. Add as many as you like.
 # ---------------------------------------------------------------------------
 
-heading: "The Story"
+heading: "Tarinamme"
 
 pages:
   - blocks:
-      - text: >-
-          The story coming here soon...
+      - text: |-
+          Spellbinding jäsenet:
+          - Rummuissa [Eeli](https://www.instagram.com/spellbinding.band/p/DcqhcojDDD_/)
+          - Bassossa [Kalle](https://www.instagram.com/spellbinding.band/p/DctY4VvjK4O/)
+          - Kiipparissa [Touko](https://www.instagram.com/spellbinding.band/p/Dcv2EwkjFNv/)
+          - Kitarassa [Vilma](https://www.instagram.com/spellbinding.band/p/Dcy0zNIDH3t/)
+          - Laulu [Topias](https://www.instagram.com/spellbinding.band/p/Dc1dj9cDFwP/)
 
      # - text: >-
      #     Placeholder text — replace with the band's story. This paragraph shows
