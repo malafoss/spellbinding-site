@@ -28,6 +28,7 @@ Use --check to verify the page is up to date without writing (exit 1 if not).
 import argparse
 import datetime as dt
 import html
+import json
 import re
 import sys
 from pathlib import Path
@@ -44,6 +45,7 @@ GALLERY_YAML = ROOT / "gallery.yaml"
 
 I = " " * 8              # indent of a .page inside .tab
 INSTAGRAM = "https://www.instagram.com/spellbinding.band/"
+SITE = "https://spellbinding.band"
 
 # Schemes a link in Markdown text may use.
 SAFE_SCHEMES = ("http://", "https://", "mailto:", "/", "#", "photos/")
@@ -331,6 +333,52 @@ def render_gig(ev, indent, where):
     ]
 
 
+def gigs_jsonld(events, indent):
+    """One MusicEvent per gig, so the calendar is machine-readable.
+
+    The rows are already semantic HTML — the <time datetime> carries the same
+    stamp this does — but only schema.org makes a listing legible as *events*
+    to a search engine's rich results, or to a crawler that wants the date and
+    the venue rather than the sentence around them.
+
+    `status:` in calendar.yaml is free text, so it is deliberately not mapped
+    to eventStatus: deciding that "Loppuunmyyty" means SoldOut would be
+    inventing a meaning the field does not carry. Nor is a timezone invented —
+    startDate is the same local time the page shows, which schema.org allows.
+    """
+    items = []
+    for n, ev in enumerate(events, 1):
+        where = f"calendar.yaml: events[{n}]"
+        item = {
+            "@type": "MusicEvent",
+            "name": f"Spellbinding — {ev['venue']}, {ev['city']}",
+            "startDate": ev["date"].isoformat()
+                         + (f"T{ev['time']}" if ev["time"] else ""),
+            "location": {
+                "@type": "Place",
+                "name": ev["venue"],
+                "address": {"@type": "PostalAddress",
+                            "addressLocality": ev["city"]},
+            },
+            "performer": {"@type": "MusicGroup", "name": "Spellbinding",
+                          "url": SITE},
+            "image": f"{SITE}/share.jpg",
+        }
+        if ev["url"]:
+            item["url"] = check_href(ev["url"], where)
+        items.append(item)
+
+    body = json.dumps({"@context": "https://schema.org", "@graph": items},
+                      ensure_ascii=False, indent=2)
+    # JSON does not escape "<", so a venue named "</script>" would end the
+    # block early and spill the rest into the document as markup.
+    body = body.replace("<", "\\u003c")
+    out = [f'{indent}<script type="application/ld+json">']
+    out += [f"{indent}{line}" for line in body.splitlines()]
+    out.append(f"{indent}</script>")
+    return out
+
+
 def render_gigs(heading, note, per_page, events):
     e = html.escape
     out = [
@@ -354,6 +402,8 @@ def render_gigs(heading, note, per_page, events):
                 out.extend(render_gig(ev, I + "    ", f"calendar.yaml: events[{n}]"))
             out.append(f"{I}  </ul>")
         out.append(f"{I}</div></div>")
+    if events:
+        out.extend(gigs_jsonld(events, I))
     out.append(f"{I}<!-- GIGS:END -->")
     return "\n".join(out)
 

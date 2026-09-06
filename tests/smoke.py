@@ -186,9 +186,36 @@ def static_checks(html):
         check(not outside, "the stripper imports only the standard library",
               f"needs {outside}, which the build container will not have")
 
+    # Rows and MusicEvent markup come from one list and must not be able to
+    # disagree; an empty calendar must emit no events rather than an empty
+    # graph. A raw "<" in a block is the injection this guards: a venue named
+    # "</script>" would otherwise close the script and spill into the document.
+    rows = html.count('<li class="gig">')
+    blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>',
+                        html, re.S)
+    events, bad = 0, []
+    for block in blocks:
+        try:
+            data = json.loads(block)
+        except Exception as e:                          # noqa: BLE001
+            bad.append(str(e))
+            continue
+        for node in (data.get("@graph") or [data]):
+            events += node.get("@type") == "MusicEvent"
+    check(not bad, "every ld+json block parses", "; ".join(bad)[:120])
+    check(events == rows, "every gig row has MusicEvent markup",
+          f"{rows} gig row(s) but {events} MusicEvent(s)")
+    check(all("<" not in b for b in blocks),
+          "ld+json escapes < so a value cannot close the block",
+          "a raw < lets a venue name end the script early")
+
     # Generated blocks must match the YAML.
     for script, label in ((ROOT / "scripts/build-content.py", "content"),
-                          (ROOT / "scripts/prep-images.py", "photos")):
+                          (ROOT / "scripts/prep-images.py", "photos"),
+                          # Cloudflare runs this one; if it refuses the page,
+                          # the deploy fails. `make test` has to see that too,
+                          # not just `make check`.
+                          (ROOT / "scripts/strip-comments.py", "dist")):
         proc = subprocess.run([str(script), "--check"],
                               capture_output=True, text=True, cwd=ROOT)
         check(proc.returncode == 0, f"generated {label} is up to date",
@@ -624,10 +651,59 @@ def restore_checks(b):
           "Back returns to Story, not Live", f"panel={panel} tab={tab}")
 
     # Only a back/forward entry restores: a fresh load still opens on Live.
+    # The fragment has to come off the URL first — switching to Story wrote
+    # #tarina, and reloading that must open Story, which deeplink_checks
+    # asserts. The default is what a URL with no fragment gets.
+    b.ev("history.replaceState(null,'',location.pathname)")
     b.reload()
     panel, tab = b.ev(PANEL_ON_SCREEN), b.ev(ACTIVE_TAB)
     check(panel == "tab-live" and tab == "live",
-          "a reload still opens on Live", f"panel={panel} tab={tab}")
+          "a reload with no fragment still opens on Live",
+          f"panel={panel} tab={tab}")
+
+
+def deeplink_checks(b):
+    """A fragment names a panel, so the calendar can be linked to directly.
+
+    Panel ids stay English because the CSS, the JS and this suite all lean on
+    them; the Finnish slugs map onto them. Each case is reloaded rather than
+    just navigated: a same-document hash change exercises the hashchange
+    listener, and only a real load exercises the fragment on init.
+    """
+    section("deep links — /#keikat opens the Live panel")
+    b.viewport(1000, 800)
+    for slug, want in (("tarina", "tab-story"), ("keikat", "tab-live"),
+                       ("galleria", "tab-gallery")):
+        b.goto("#" + slug)
+        b.reload()
+        panel, tab = b.ev(PANEL_ON_SCREEN), b.ev(ACTIVE_TAB)
+        check(panel == want and f"tab-{tab}" == want,
+              f"/#{slug} opens {want}", f"panel={panel} tab={tab}")
+
+    # Landing on / must not invent a fragment before the visitor acts. The
+    # hop through 404.html matters: navigating from /#galleria to / differs
+    # only in the fragment, which is a same-document navigation that leaves
+    # the old fragment in the URL, so / would never actually be bare.
+    b.goto("404.html")
+    b.goto()
+    got = b.ev("location.hash")
+    check(got == "", "landing on / leaves the URL alone", f"hash={got!r}")
+
+    # Changing panel makes the URL shareable.
+    b.ev("window.scrollTo(0,document.documentElement.scrollHeight)")
+    time.sleep(0.6)
+    b.click(".tab-link[data-tab='gallery']")
+    time.sleep(1.5)
+    got = b.ev("location.hash")
+    check(got == "#galleria", "changing panel writes the fragment",
+          f"hash={got!r}")
+
+    # A fragment set after load is followed, so an in-page anchor would work.
+    b.ev("location.hash = '#tarina'")
+    time.sleep(1.6)
+    panel = b.ev(PANEL_ON_SCREEN)
+    check(panel == "tab-story", "a fragment set after load is followed",
+          f"panel={panel}")
 
 
 def main():
@@ -661,6 +737,7 @@ def main():
         audio_checks(b)
         lightbox_checks(b)
         restore_checks(b)
+        deeplink_checks(b)
     except Exception as e:                              # noqa: BLE001
         check(False, "browser checks ran", f"{type(e).__name__}: {e}")
     finally:

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1183,6 +1183,37 @@
     // still open on Live, which is the documented behaviour.
     const TAB_KEY = 'spellbinding:tab';
 
+    // Deep links: /#keikat opens the Live panel, and changing panel rewrites
+    // the fragment so the URL can be shared or bookmarked. The panel ids are
+    // English and are load-bearing in the CSS, the JS and the tests, so the
+    // Finnish slugs map onto them rather than renaming anything.
+    const TAB_SLUGS = { tarina: 'tab-story', keikat: 'tab-live',
+                        galleria: 'tab-gallery' };
+    // The initial goToTab must not write a fragment: landing on / should stay
+    // /, not become /#keikat before the visitor has touched anything.
+    let hashReady = false;
+
+    function tabFromHash() {
+      // slice(1), not a regex: location.hash is either empty or starts
+      // with '#', and strip-comments.py refuses to process a page that
+      // contains a regex literal — its scanner cannot tell /^#/ from the
+      // start of a comment, so it stops rather than mangle the page.
+      const raw = (location.hash || '').slice(1).toLowerCase();
+      if (!raw) return -1;
+      const id = TAB_SLUGS[raw] || (raw.indexOf('tab-') === 0 ? raw : null);
+      return id ? tabEls.findIndex(t => t.id === id) : -1;
+    }
+
+    function writeHash() {
+      if (!hashReady) return;
+      const id = tabEls[activeTab] && tabEls[activeTab].id;
+      const slug = Object.keys(TAB_SLUGS).filter(k => TAB_SLUGS[k] === id)[0];
+      if (!slug || location.hash === '#' + slug) return;
+      // replaceState, not pushState: Back should leave the site, not walk back
+      // through the panels one at a time.
+      try { history.replaceState(null, '', '#' + slug); } catch (e) { /* ignore */ }
+    }
+
     function rememberTab() {
       try { sessionStorage.setItem(TAB_KEY, tabEls[activeTab].id); }
       catch (e) { /* private mode throws; the panel just will not be restored */ }
@@ -1198,6 +1229,8 @@
     }
 
     function tabToOpen() {
+      const fromHash = tabFromHash();
+      if (fromHash >= 0) return fromHash;
       if (navType() !== 'back_forward') return activeTab;
       let id;
       try { id = sessionStorage.getItem(TAB_KEY); } catch (e) { return activeTab; }
@@ -1228,14 +1261,28 @@
     }
 
     function goToTab(i, smooth) {
+      const prev = activeTab;
       activeTab = Math.max(0, Math.min(tabEls.length - 1, i));
+      // behavior:'auto' means "whatever CSS says", and #tabs carries
+      // scroll-behavior: smooth — so the initial positioning used to animate.
+      // The scroll handler then sampled the panel mid-flight, decided the
+      // strip was on Story, and both marked the wrong label for a frame and
+      // wrote that into the URL. An inline scroll-behavior outranks the
+      // stylesheet, so smooth === false really is instant now.
+      const instant = smooth === false;
+      if (instant) stripEl.style.scrollBehavior = 'auto';
       stripEl.scrollTo({ left: activeTab * stripEl.clientWidth,
-                         behavior: smooth === false ? 'auto' : 'smooth' });
+                         behavior: instant ? 'auto' : 'smooth' });
+      if (instant) stripEl.style.scrollBehavior = '';
       // Arriving at a tab should show its first page, not wherever it was left.
       const tab = tabEls[activeTab];
       if (tab) tab.scrollTop = 0;
       paintTabs();
       rememberTab();
+      // Only a real panel change touches the URL. The resize handler calls
+      // this with the current panel purely to re-centre the strip, and that
+      // must not turn a bare / into /#keikat behind the visitor's back.
+      if (activeTab !== prev) writeHash();
     }
 
     linkEls.forEach((l, i) => l.addEventListener('click', () => goToTab(i)));
@@ -1256,7 +1303,9 @@
         stripFrame = requestAnimationFrame(() => {
           stripFrame = 0;
           const i = nearestTab();
-          if (i !== activeTab) { activeTab = i; paintTabs(); rememberTab(); }
+          if (i !== activeTab) {
+            activeTab = i; paintTabs(); rememberTab(); writeHash();
+          }
         });
       }
     }, { passive: true });
@@ -1318,6 +1367,11 @@
     // strip sits at Story while the markup already marks Live as current: the
     // two disagreed until something else moved the strip.
     goToTab(tabToOpen(), false);
+    hashReady = true;
+    window.addEventListener('hashchange', () => {
+      const i = tabFromHash();
+      if (i >= 0 && i !== activeTab) goToTab(i);
+    });
     window.addEventListener('resize', () => goToTab(activeTab, false), { passive: true });
 
     // ── Lightbox ─────────────────────────────────────────────────────────────
