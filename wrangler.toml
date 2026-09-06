@@ -2,8 +2,11 @@ name = "spellbinding-site"
 compatibility_date = "2026-04-19"
 
 [assets]
-# dist/, not public/: the same files with the HTML comments stripped, which is
-# 35% of the gzipped page. `make` builds it; public/ stays the source of truth.
-directory = "./dist"
+# public/, and not dist/, deliberately. dist/ is the comment-stripped copy that
+# `make` builds and `make test-dist` verifies, but it is gitignored, so
+# whatever deploys this repo on push cannot see it: pointing here at ./dist
+# took the site down to the previous deploy until this was reverted. Serving
+# dist/ needs the deploy to run `make` first — until that exists, ship public/.
+directory = "./public"
 # Serve public/404.html for unknown paths, rather than a bare Cloudflare 404.
 not_found_handling = "404-page"
