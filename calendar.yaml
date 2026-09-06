@@ -25,28 +25,29 @@ per_page: 5
 
 # A line shown above the list. Set to "" to remove it entirely. Takes the same
 # Markdown subset as story.yaml: [links](https://…), **bold**, *italic*, `code`.
-note: "Placeholder listings — not real dates yet. Stay tuned."
+note: "More events coming soon. Stay tuned."
 
 # An empty list (events: []) renders the "no dates announced yet" state,
 # which is the safe thing to publish when nothing is confirmed.
 events:
-  - date:   2026-10-03          # required, YYYY-MM-DD
-    time:   "20:00"             # optional, 24-hour "HH:MM"; omit if not announced
-    venue:  Example Venue       # required
-    city:   City                # required
-    status: Placeholder         # optional, right-hand column; omit for none
-    # url:  https://…           # optional, turns the venue into a link
 
-  - date:   2026-10-17
-    time:   "21:30"
-    venue:  Example Venue
-    city:   City
-    status: Placeholder
+#  - date:   2026-10-03          # required, YYYY-MM-DD
+#    time:   "20:00"             # optional, 24-hour "HH:MM"; omit if not announced
+#    venue:  Example Venue       # required
+#    city:   City                # required
+#    status: Placeholder         # optional, right-hand column; omit for none
+#    # url:  https://…           # optional, turns the venue into a link
 
-  - date:   2026-11-07          # time omitted: no time is shown
-    venue:  Example Venue
-    city:   City
-    status: Placeholder
+#  - date:   2026-10-17
+#    time:   "21:30"
+#    venue:  Example Venue
+#    city:   City
+#    status: Placeholder
+
+#  - date:   2026-11-07          # time omitted: no time is shown
+#    venue:  Example Venue
+#    city:   City
+#    status: Placeholder
 
 # Real entries look like this:
 #

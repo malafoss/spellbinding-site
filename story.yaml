@@ -26,13 +26,16 @@ heading: "The Story"
 pages:
   - blocks:
       - text: >-
-          Placeholder text — replace with the band's story. This paragraph shows
-          **bold**, *italic*, `code` and a [link](https://www.instagram.com/spellbinding.band/).
-      - text: "A second paragraph on the same screenful."
+          The story coming here soon...
+
+     # - text: >-
+     #     Placeholder text — replace with the band's story. This paragraph shows
+     #     **bold**, *italic*, `code` and a [link](https://www.instagram.com/spellbinding.band/).
+     # - text: "A second paragraph on the same screenful."
 
   # A second page. Scrolling inside the tab snaps to it.
-  - blocks:
-      - text: "This is the second screenful of the story."
+  #- blocks:
+  #    - text: "This is the second screenful of the story."
       # An image block. alt is required; caption is optional and takes the
       # same Markdown as text.
       # - image: photos/rehearsal.jpg
