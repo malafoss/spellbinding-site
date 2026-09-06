@@ -1,12 +1,23 @@
 name = "spellbinding-site"
 compatibility_date = "2026-04-19"
 
+# Cloudflare clones this repo and deploys with wrangler, so the stripped copy
+# has to be built there: dist/ is gitignored and is not in the clone. Only the
+# stripping runs here, not `make` — build-content.py needs pyyaml, which the
+# build container has no reason to have, and it does not need to run anyway
+# because the YAML is already rendered into public/index.html and committed.
+# strip-comments.py is deliberately stdlib-only for exactly this reason.
+[build]
+command = "python3 scripts/strip-comments.py"
+
 [assets]
-# public/, and not dist/, deliberately. dist/ is the comment-stripped copy that
-# `make` builds and `make test-dist` verifies, but it is gitignored, so
-# whatever deploys this repo on push cannot see it: pointing here at ./dist
-# took the site down to the previous deploy until this was reverted. Serving
-# dist/ needs the deploy to run `make` first — until that exists, ship public/.
-directory = "./public"
+# dist/, the comment-stripped mirror of public/ that [build] produces above.
+# 27% smaller raw, 35% gzipped. public/ stays the source of truth and keeps
+# its comments; `make test-dist` puts dist/ through all 88 checks.
+#
+# If a deploy ever fails here with "./dist does not exist", the build command
+# did not run: set directory back to "./public" to restore deploys, then fix
+# the build. Production keeps serving the last good version meanwhile.
+directory = "./dist"
 # Serve public/404.html for unknown paths, rather than a bare Cloudflare 404.
 not_found_handling = "404-page"

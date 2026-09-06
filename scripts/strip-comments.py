@@ -1,7 +1,4 @@
-#!/usr/bin/env -S uv run --script --quiet
-# /// script
-# requires-python = ">=3.9"
-# ///
+#!/usr/bin/env python3
 """Mirror public/ into dist/ with the comments taken out of the HTML.
 
 The page carries its own documentation: 16 kB of it, explaining why the CSS
@@ -17,6 +14,13 @@ copy that ships:
 
 Only *.html is rewritten. Everything else is hard-linked, so the photos and the
 audio are not duplicated on disk.
+
+Unlike the other two scripts this one runs on a plain `python3` shebang with no
+uv and no PEP 723 dependencies, and it must stay that way: it is the build
+command Cloudflare runs when it deploys, and only the standard library can be
+relied on there. build-content.py needs pyyaml and so cannot run in that
+container — it does not have to, because the YAML is already rendered into
+public/index.html and committed. Cloudflare only has to strip.
 
 Comments are removed by scanning, not by regex: a scanner knows that the //
 in "https://schema.org" is inside a string and that a /* inside a template

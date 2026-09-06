@@ -170,6 +170,22 @@ def static_checks(html):
           f"literal marker in {story[stray.start() + 1:stray.start() + 40]!r}"
           if stray else "")
 
+    # Cloudflare runs strip-comments.py as its build command, in a container
+    # that has nothing installed. A third-party import there fails the deploy,
+    # and production silently keeps serving the previous version — which is
+    # exactly how the ./dist switch went wrong the first time.
+    strip = (ROOT / "scripts/strip-comments.py").read_text(encoding="utf-8")
+    check(strip.startswith("#!/usr/bin/env python3\n"),
+          "the stripper runs on a plain python3 shebang",
+          f"starts {strip.splitlines()[0]!r} — uv is not in the build container")
+    stdlib = getattr(sys, "stdlib_module_names", None)
+    if stdlib:
+        outside = sorted(
+            {n.split(".")[0] for n in re.findall(r"(?m)^(?:import|from)\s+([\w.]+)", strip)}
+            - set(stdlib))
+        check(not outside, "the stripper imports only the standard library",
+              f"needs {outside}, which the build container will not have")
+
     # Generated blocks must match the YAML.
     for script, label in ((ROOT / "scripts/build-content.py", "content"),
                           (ROOT / "scripts/prep-images.py", "photos")):
